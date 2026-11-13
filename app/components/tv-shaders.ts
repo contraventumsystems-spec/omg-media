@@ -183,8 +183,9 @@ export function createScreenMaterial(seed: number) {
 
 /**
  * A bar screen. The model keeps the glass, a drip and a share of a floor pool in
- * one mesh; only the glass is drawn. The paint that leaves the screen is its own
- * geometry (createStreamMaterial), so it can gather, fall and land on the timeline.
+ * one mesh. The glass is the picture; everything below it is the modeled paint,
+ * which stays as it was made. The paint that moves is its own geometry
+ * (createStreamMaterial), so it can gather, fall and land on the timeline.
  *
  * uTune takes the glass from static to locked bars. uMelt then turns the bars to
  * paint in place: same order across the screen, soft edges that sag and wander.
@@ -204,10 +205,25 @@ const MELT_FRAGMENT = /* glsl */ `
   varying vec3 vWorld;
 
   void main() {
-    if (vWorld.y < uScreenBottom) discard;
-
     /* The stripe texture had eight columns; the eighth was black. */
     float stripe = clamp(vUv.x / 0.875, 0.0, 0.999);
+
+    /*
+     * Below the glass the mesh is the modeled paint: the drip and the pool. It is
+     * drawn from the first frame, in the same bands as the stream that joins it.
+     */
+    if (vWorld.y < uScreenBottom) {
+      vec3 wet = mix(liquid(stripeHue(stripe)), uTint, uTintMix);
+      vec3 surface = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+      vec3 eye = normalize(cameraPosition - vWorld);
+      if (dot(surface, eye) < 0.0) surface = -surface;
+      float shine = max(dot(surface, normalize(normalize(vec3(0.55, 0.8, 0.25)) + eye)), 0.0);
+      wet += (0.5 * pow(shine, 36.0) + 0.1 * pow(shine, 6.0)) * uPaper;
+      gl_FragColor = vec4(wet * uDim, 1.0);
+      #include <colorspace_fragment>
+      return;
+    }
+
     vec2 uv = vec2(stripe, (vWorld.y - uScreenBottom) / max(uTop - uScreenBottom, 0.001));
     vec3 color = tuneIn(uv, uTune, uSeed, uTint, uTintMix);
 
@@ -241,6 +257,13 @@ export function createMeltMaterial(shape: MeltShape) {
     fragmentShader: MELT_FRAGMENT,
     side: THREE.DoubleSide,
     toneMapped: false,
+    /*
+     * The modeled paint is tested against depth but does not write it, and is
+     * drawn after the cabinets (see renderOrder in the scene). A stream drawn
+     * after it is then always in front of the floor puddle, whichever side of
+     * the puddle's surface it is on, so it never appears to cut through it.
+     */
+    depthWrite: false,
     uniforms: {
       ...sharedUniforms,
       uTune: { value: 0 },
@@ -380,13 +403,14 @@ const STREAM_FRAGMENT = /* glsl */ `
     float facing = clamp(dot(normal, view), 0.0, 1.0);
 
     /*
-     * On the glass the colours run across the stream, in the bar order. Once the
-     * paint hangs free they turn to run along it, and they travel with it.
+     * The colours run side by side across the stream, in the bar order, from the
+     * glass to the hole: the bands narrow with the paint and never change places.
+     * Once it hangs free their edges wander a little, and the wander travels with it.
      */
-    float along = smoothstep(uLip * 0.6, uLip + 2.6, vArc);
-    float stripe = clamp(uStripe.x + uStripe.y * vAcross, 0.0, 0.999);
-    float hue = stripeHue(stripe) * (1.0 - along)
-      + along * ((vArc - uPhase) * 0.034 + uSeed);
+    float wander = 0.035 * sin((vArc - uPhase) * 0.45 + uSeed * 9.0)
+      + 0.015 * sin((vArc - uPhase) * 1.3 + uSeed * 4.0);
+    float stripe = clamp(uStripe.x + uStripe.y * vAcross + wander * vFree, 0.0, 0.999);
+    float hue = stripeHue(stripe);
     vec3 paint = mix(liquid(hue), uTint, uTintMix) * uDim;
 
     /*
@@ -405,6 +429,9 @@ const STREAM_FRAGMENT = /* glsl */ `
     vec3 light = normalize(vec3(0.55, 0.8, 0.25));
     float glint = max(dot(normal, normalize(light + view)), 0.0);
     color += uGloss * uDim * volume * (0.85 * pow(glint, 36.0) + 0.2 * pow(glint, 6.0)) * uPaper;
+    /* One long streak down the ribbon, off centre: thick paint holds a line of light as it falls. */
+    float streak = smoothstep(0.13, 0.0, abs(vAcross + 0.3)) * smoothstep(0.3, 0.8, facing);
+    color += 0.22 * uGloss * uDim * vFree * streak * uPaper;
 
     /* Depth: far paint sinks a little into the page, and it goes black as it drops into the hole. */
     float distanceToEye = distance(cameraPosition, vWorld);

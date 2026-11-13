@@ -4,6 +4,7 @@ import {
   createHoleWellMaterial,
   createStreamMaterial,
 } from "@/app/components/tv-shaders"
+import { LIQUID_HEX } from "@/app/lib/bars"
 
 /**
  * The cascade: one stream of paint per bar screen, and the hole they fall into.
@@ -147,6 +148,8 @@ export type Stream = {
   /** Path length, and the distance along it at which the paint leaves the cabinet. */
   length: number
   lip: number
+  /** The path itself, for placing droplets on it. Null until the first layout. */
+  curve: THREE.CatmullRomCurve3 | null
   /** Under-damped follower of the leading edge; its lag bows the strand a little. */
   lag: { value: number; velocity: number }
 }
@@ -160,6 +163,17 @@ export type Cascade = {
     ground: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
     well: THREE.Group
   }
+  /** Droplets that part from the paint at pinch-off: DROPLETS instances per stream, in stream order. */
+  droplets: THREE.InstancedMesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
+  /**
+   * Places one stream's droplets. Everything comes from the timeline values, so
+   * a scrub in either direction puts them back where they were.
+   *   head     leading edge, in world units along the path
+   *   stretch  how long the fall has pulled the drop
+   *   scale    0 hides them
+   *   count    how many of the stream's droplets to draw
+   */
+  placeDroplets: (index: number, head: number, stretch: number, scale: number, count: number) => void
   /** Moves the hole and rebuilds every path to it. */
   layout: (centre: THREE.Vector3, radius: number) => void
   setDetail: (lite: boolean) => void
@@ -178,6 +192,11 @@ const FILM_DEPTH = 0.04
 /** Radius of a strand in free fall, before its own variation. */
 const STRAND = 0.23
 const DROP = 0.56
+/** Width of the sheet as it clears the lip, as a share of the film on the glass. */
+const SHEET = 0.66
+/** Half-thickness of that sheet, and of the bulge on the lip, for a set of base size. */
+const SHEET_DEPTH = 0.13
+const BULGE = 0.12
 
 function streamPath(
   glass: GlassFrame,
@@ -299,7 +318,14 @@ function streamGeometry(
   const out = new THREE.Vector3()
   const filmWidth = path.halfWidth * 0.95
   const cap = path.glassRun * 0.32
-  const narrow = 0.5 + 1.0 * path.size
+  /*
+   * Poured paint, not a tap: it clears the lip as a broad sheet, most of the
+   * width of the picture, and gravity draws it out slowly. `reach` is the fall
+   * over which the sheet loses half of its extra width.
+   */
+  const sheet = filmWidth * SHEET
+  const reach = 2.4 * path.size
+  const gatherFrom = path.glassRun * 0.7
   const strand = STRAND * (0.85 + 0.35 * random(seed, 7))
   const phaseA = random(seed, 8) * 6.28
   const phaseB = random(seed, 9) * 6.28
@@ -319,13 +345,25 @@ function streamGeometry(
     const far = THREE.MathUtils.smoothstep(u, 0.3, 1)
     const thread = strand * wobble * (1 + 0.3 * far)
 
-    /* On the glass: a rounded surface that widens to the full picture. Then it gathers into a strand. */
+    /* On the glass: a rounded surface that widens to the full picture. */
     const rise = Math.min(arc / cap, 1)
     const film = filmWidth * Math.sqrt(1 - (1 - rise) * (1 - rise))
-    const gathered = THREE.MathUtils.smoothstep((arc - path.glassRun * 0.6) / narrow, 0, 1)
-    const blend = Math.pow(gathered, 0.6)
-    const halfWidth = THREE.MathUtils.lerp(film, thread, blend)
-    const halfDepth = THREE.MathUtils.lerp(FILM_DEPTH, thread * 0.82, blend)
+    /* Along the bottom of the glass it draws in a little and thickens: the paint gathers before it goes over. */
+    const gathered = THREE.MathUtils.smoothstep(
+      (arc - gatherFrom) / (path.lipRun - gatherFrom),
+      0,
+      1,
+    )
+    /* Past the lip: 0 a full sheet, 1 a strand. Quick at first, then a long slow taper. */
+    const fall = Math.max(arc - path.lipRun, 0)
+    const thin = 1 - 1 / (1 + fall / reach)
+    const ribbon = THREE.MathUtils.lerp(sheet, thread, thin)
+    const halfWidth = THREE.MathUtils.lerp(film, ribbon, gathered)
+    /* The bulge sits on the lip itself, where the paint piles up against the edge of the cabinet. */
+    const pile = (arc - path.lipRun) / (0.45 * path.size)
+    const bulge = BULGE * path.size * Math.exp(-pile * pile)
+    const body = THREE.MathUtils.lerp(SHEET_DEPTH * path.size, thread * 0.82, thin)
+    const halfDepth = THREE.MathUtils.lerp(FILM_DEPTH, body, gathered) + bulge
 
     for (let j = 0; j < sides; j++) {
       const v = i * sides + j
@@ -358,14 +396,24 @@ function streamGeometry(
   geometry.setAttribute("aBase", new THREE.BufferAttribute(aBase, 2))
   geometry.setIndex(indices)
 
-  return { length, lip: path.lipRun, filmWidth }
+  return { length, lip: path.lipRun, filmWidth, curve }
 }
+
+/** Droplets per stream. Lite devices draw only the first. */
+export const DROPLETS = 3
+const dropletMatrix = new THREE.Matrix4()
+const dropletPoint = new THREE.Vector3()
+const dropletScale = new THREE.Vector3()
+const NO_TURN = new THREE.Quaternion()
 
 /**
  * `front` is the forward-most face of the cabinets, which the paint has to clear.
  * The cascade starts with the hole at the origin; call layout() before drawing it.
  */
-export function createCascade(sources: StreamSource[], front: number): Cascade {
+export function createCascade(
+  sources: StreamSource[],
+  front: number,
+): Cascade {
   const group = new THREE.Group()
   group.name = "Cascade"
   let rings = 180
@@ -390,9 +438,29 @@ export function createCascade(sources: StreamSource[], front: number): Cascade {
       mesh,
       length: 1,
       lip: 0,
+      curve: null,
       lag: { value: 0, velocity: 0 },
     }
   })
+
+  /* One sphere and one material for every droplet of every stream. */
+  const droplets = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 10, 8),
+    new THREE.MeshBasicMaterial({ toneMapped: false }),
+    Math.max(streams.length * DROPLETS, 1),
+  )
+  droplets.name = "Droplets"
+  droplets.frustumCulled = false
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0)
+  const tint = new THREE.Color()
+  for (let i = 0; i < droplets.count; i++) {
+    droplets.setMatrixAt(i, hidden)
+    /* Each takes one of the paint colours, so a stream sheds more than one band. */
+    const seed = sources[Math.floor(i / DROPLETS)]?.seed ?? 1
+    tint.set(LIQUID_HEX[Math.floor(random(seed, 20 + i) * LIQUID_HEX.length) % LIQUID_HEX.length])
+    droplets.setColorAt(i, tint)
+  }
+  group.add(droplets)
 
   /* Unit-sized hole, scaled to the radius in layout(). The ground is wide enough to hide the well's wall. */
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), createHoleGroundMaterial())
@@ -420,7 +488,7 @@ export function createCascade(sources: StreamSource[], front: number): Cascade {
     streams.forEach((stream, index) => {
       const source = sources[index]
       const slot = leftToRight.indexOf(source)
-      const { length, lip, filmWidth } = streamGeometry(
+      const { length, lip, filmWidth, curve } = streamGeometry(
         stream.mesh.geometry,
         stream.glass,
         hole,
@@ -433,6 +501,7 @@ export function createCascade(sources: StreamSource[], front: number): Cascade {
       const uniforms = stream.mesh.material.uniforms
       stream.length = length
       stream.lip = lip
+      stream.curve = curve
       uniforms.uLength.value = length
       uniforms.uLip.value = lip
       uniforms.uStripe.value.set(stream.glass.stripe[0], stream.glass.stripe[1] * filmWidth)
@@ -445,6 +514,37 @@ export function createCascade(sources: StreamSource[], front: number): Cascade {
     group,
     streams,
     hole,
+    droplets,
+    placeDroplets(index, head, stretch, scale, count) {
+      const stream = streams[index]
+      const seed = sources[index].seed
+      /*
+       * They form as the neck thins, just after the drop lets go, and are gone before
+       * it lands. The drop creeps about one unit past the lip while it still hangs.
+       */
+      const pinch =
+        THREE.MathUtils.smoothstep(head - stream.lip, 1.6, 3.4) *
+        (1 - THREE.MathUtils.smoothstep(head / stream.length, 0.72, 0.92))
+      for (let k = 0; k < DROPLETS; k++) {
+        const slot = index * DROPLETS + k
+        /* Strung out up the neck behind the drop, further apart the longer the fall has pulled it. */
+        const arc = head - (0.25 + 0.6 * k + 0.4 * random(seed, 30 + k)) * (1 + 1.2 * stretch)
+        const size = (0.2 - 0.04 * k) * (0.8 + 0.4 * random(seed, 40 + k)) * pinch * scale
+        if (!stream.curve || k >= count || size <= 0.001 || arc < stream.lip + 0.35) {
+          droplets.setMatrixAt(slot, hidden)
+          continue
+        }
+        stream.curve.getPointAt(arc / stream.length, dropletPoint)
+        /* Thrown clear of the drop to one side, alternating, and drifting out as they fall. */
+        const aside =
+          (k % 2 === 0 ? 1 : -1) * (DROP + 0.2 + 0.45 * stretch) * (0.8 + 0.5 * random(seed, 50 + k))
+        dropletPoint.addScaledVector(stream.glass.right, aside)
+        /* A falling drop is a little longer than it is wide. */
+        dropletScale.set(size, size * (1 + 0.5 * stretch), size)
+        droplets.setMatrixAt(slot, dropletMatrix.compose(dropletPoint, NO_TURN, dropletScale))
+      }
+      droplets.instanceMatrix.needsUpdate = true
+    },
     layout(centre, radius) {
       hole.centre.copy(centre)
       hole.radius = radius

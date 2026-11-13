@@ -5,7 +5,13 @@ import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { type Cascade, createCascade, measureGlass, type StreamSource } from "@/app/components/tv-cascade";
+import {
+  type Cascade,
+  createCascade,
+  DROPLETS,
+  measureGlass,
+  type StreamSource,
+} from "@/app/components/tv-cascade";
 import {
   createHalftoneMaterial,
   createMeltMaterial,
@@ -139,17 +145,18 @@ function buildPile(source: THREE.Group): Rig {
       const box = new THREE.Box3().setFromObject(mesh);
       mesh.getWorldScale(scale);
       const hasScreen = box.max.y - box.min.y > 1.5;
+      /* A mesh with no glass is all modeled paint: put the line above it, so the shader draws paint. */
       const screenBottom = hasScreen
         ? box.max.y - SCREEN_HEIGHT * (scale.x / BASE_SCALE)
-        : box.max.y;
+        : box.max.y + 1;
       const material = createMeltMaterial({
         seed: seed * 0.173,
         top: box.max.y,
         screenBottom,
       });
       mesh.material = material;
-      /* A mesh with no glass was only ever a drip or a share of the pool. The streams replace both. */
-      mesh.visible = hasScreen;
+      /* After the cabinets and before the streams; the material does not write depth. */
+      mesh.renderOrder = 1;
       melts.push({
         material,
         hasScreen,
@@ -176,15 +183,6 @@ function buildPile(source: THREE.Group): Rig {
       return;
     }
 
-    /*
-     * The model has flat black shapes lying on the floor, where its paint pool
-     * used to gather. With the pool gone they would float as black blobs.
-     */
-    const bounds = new THREE.Box3().setFromObject(mesh);
-    if (bounds.max.y < 0.7 && bounds.max.y - bounds.min.y < 0.45) {
-      mesh.visible = false;
-      return;
-    }
     mesh.material = body;
   });
 
@@ -242,6 +240,9 @@ function buildPile(source: THREE.Group): Rig {
   }
   sources.sort((a, b) => a.order - b.order);
   const cascade = createCascade(sources, cabinets.isEmpty() ? 10 : cabinets.max.x);
+  /* Cabinets, then the modeled paint, then the moving paint: the streams fall in front of the puddle. */
+  for (const stream of cascade.streams) stream.mesh.renderOrder = 2;
+  cascade.droplets.renderOrder = 2;
   root.add(cascade.group);
 
   return { root, melts, screens, glints, halftone, cascade };
@@ -481,8 +482,12 @@ function TvPile() {
 
     for (const material of rig.screens) material.uniforms.uDim.value = dim;
     for (const melt of rig.melts) {
-      if (!melt.hasScreen) continue;
       const uniforms = melt.material.uniforms;
+      if (!melt.hasScreen) {
+        /* Modeled pool and drips: they dim with the screens that are not streams. */
+        uniforms.uDim.value = dim;
+        continue;
+      }
       const slot = hero.streams[melt.order];
 
       const tint = melt.stream < 0 ? 0 : smooth(clamp01(tintPhase - melt.stream));
@@ -539,7 +544,10 @@ function TvPile() {
      * when the scroll stops it rings down to nothing within half a second.
      */
     const step = Math.min(delta, 1 / 30);
-    for (const paint of cascade.streams) {
+    /* Mobile and lite devices keep one droplet per stream, so the joins and bands stay the picture. */
+    const droplets = store.lite || store.mobile ? 1 : DROPLETS;
+    for (let index = 0; index < cascade.streams.length; index++) {
+      const paint = cascade.streams[index];
       const slot = hero.streams[paint.order];
       const uniforms = paint.mesh.material.uniforms;
       const visible = slot.head > 0 && push < 0.45;
@@ -547,6 +555,7 @@ function TvPile() {
       if (!visible) {
         paint.lag.value = slot.head;
         paint.lag.velocity = 0;
+        cascade.placeDroplets(index, 0, 0, 0, 0);
         continue;
       }
 
@@ -569,6 +578,7 @@ function TvPile() {
 
       const melt = rig.melts.find((item) => item.hasScreen && item.order === paint.order);
       const landed = smooth(clamp01((slot.head - 0.96) / 0.04));
+      cascade.placeDroplets(index, head, slot.stretch, 1 - clamp01(push * 2.2), droplets);
       uniforms.uHead.value = head;
       uniforms.uSwell.value = slot.swell;
       uniforms.uStretch.value = slot.stretch;
