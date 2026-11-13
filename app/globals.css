@@ -158,3 +158,17 @@ details[open] > summary .faq-mark {
     animation: none !important;
   }
 }
+
+/*
+ * Old film over the 3D layer: fine grain in the paper colour and darker corners.
+ * A static tile and a gradient, no blend mode and no animation, so a phone
+ * composites it once and scrolls it for free.
+ */
+.scene-grain {
+  background-image:
+    radial-gradient(ellipse 85% 70% at 50% 46%, transparent 52%, rgba(6, 4, 2, 0.34) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.91 0 0 0 0 0.82 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+  background-size:
+    100% 100%,
+    180px 180px;
+}

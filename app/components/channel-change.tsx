@@ -89,8 +89,8 @@ export function ChannelChange() {
         }
 
         /* Quarter resolution, capped so a desktop does not fill a huge buffer. */
-        canvas.width = Math.min(Math.ceil(window.innerWidth / 4), 360);
-        canvas.height = Math.min(Math.ceil(window.innerHeight / 4), 240);
+        canvas.width = Math.max(1, Math.min(Math.ceil(window.innerWidth / 4), 360));
+        canvas.height = Math.max(1, Math.min(Math.ceil(window.innerHeight / 4), 240));
         drawNoise();
 
         gsap

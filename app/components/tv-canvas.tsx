@@ -5,6 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense, useEffect, useLayoutEffect } from "react";
 import * as THREE from "three";
 import { TvScene } from "@/app/components/tv-scene";
+import { PAGE_HEX } from "@/app/lib/bars";
 import { useSceneStore } from "@/app/lib/scene-store";
 import { MOBILE_ASPECT } from "@/app/lib/shots";
 
@@ -27,6 +28,10 @@ function startsLite() {
  * Fixed WebGL layer behind the page. It takes no pointer events and is hidden
  * from assistive tech. It draws every frame only while a 3D beat is on screen
  * and the tab is visible; under reduced motion it draws single still frames.
+ *
+ * The layer is 100lvh tall, the viewport with the address bar hidden, and does
+ * not follow the window. On a phone the bar slides away on the first swipe; a
+ * layer that tracked it would resize the canvas and re-frame the pile mid-scroll.
  */
 export default function TvCanvas() {
   const mobile = useSceneStore((state) => state.mobile);
@@ -87,7 +92,7 @@ export default function TvCanvas() {
 
   return (
     <div
-      className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 ${
+      className={`pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh transition-opacity duration-700 ${
         ready ? "opacity-100" : "opacity-0"
       }`}
       aria-hidden="true"
@@ -105,7 +110,7 @@ export default function TvCanvas() {
         camera={{ fov: mobile ? 45 : 35, position: [60, 12, -3], near: 0.3, far: 400 }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.setClearColor("#070C0F", 1);
+          gl.setClearColor(PAGE_HEX, 1);
         }}
       >
         <Suspense fallback={null}>
@@ -119,6 +124,8 @@ export default function TvCanvas() {
           />
         ) : null}
       </Canvas>
+      {/* Film grain and a soft vignette, one static layer over the canvas. The type sits above it, untouched. */}
+      <div className="scene-grain absolute inset-0" />
     </div>
   );
 }

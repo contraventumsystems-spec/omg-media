@@ -31,6 +31,7 @@ import {
   resolveShot,
   riverShot,
   shots,
+  stillFrame,
 } from "@/app/lib/shots";
 
 /**
@@ -175,6 +176,15 @@ function buildPile(source: THREE.Group): Rig {
       return;
     }
 
+    /*
+     * The model has flat black shapes lying on the floor, where its paint pool
+     * used to gather. With the pool gone they would float as black blobs.
+     */
+    const bounds = new THREE.Box3().setFromObject(mesh);
+    if (bounds.max.y < 0.7 && bounds.max.y - bounds.min.y < 0.45) {
+      mesh.visible = false;
+      return;
+    }
     mesh.material = body;
   });
 
@@ -254,8 +264,6 @@ function pileFor(source: THREE.Group) {
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const smooth = (value: number) => value * value * (3 - 2 * value);
-/* Softer than expo: the move is scrubbed, so a flat start would feel like a dead thumb. */
-const cameraEase = gsap.parseEase("power3.inOut");
 const streamEase = gsap.parseEase("power2.inOut");
 const projected = new THREE.Vector3();
 const glassSize = new THREE.Vector3();
@@ -290,10 +298,12 @@ function TvPile() {
   const mobile = useSceneStore((state) => state.mobile);
   const reduced = useSceneStore((state) => state.reduced);
   const lite = useSceneStore((state) => state.lite);
+  const heroFrame = useSceneStore((state) => state.heroFrame);
 
   const frame = useRef({
     from: null as ResolvedShot | null,
     to: null as ResolvedShot | null,
+    cascade: null as ResolvedShot | null,
     push: null as ResolvedShot | null,
     tilt: null as ResolvedShot | null,
     river: null as ResolvedShot | null,
@@ -304,13 +314,14 @@ function TvPile() {
     offset: new THREE.Vector3(),
     right: new THREE.Vector3(),
     pointer: new THREE.Vector2(),
+    hole: { centre: new THREE.Vector3(), radius: 1 },
     drawn: false,
   });
 
   /* Demand mode draws one frame per invalidate: redraw the still when the framing inputs change. */
   useEffect(() => {
     invalidate();
-  }, [invalidate, mobile, reduced, lite, root]);
+  }, [invalidate, mobile, reduced, lite, heroFrame, root]);
 
   useFrame((state, delta) => {
     const rig = pileFor(scene);
@@ -318,26 +329,55 @@ function TvPile() {
     const camera = state.camera as THREE.PerspectiveCamera;
     const aspect = state.size.width / Math.max(state.size.height, 1);
     const current = frame.current;
-    const set = store.mobile ? shots.mobile : shots.desktop;
+    const layout = store.mobile ? "mobile" : "desktop";
+    const set = shots[layout];
+    const cascade = rig.cascade;
+    /* Reduced motion holds the finished picture: bars on, paint landed, clock stopped. */
+    const hero = store.reduced ? SETTLED : heroRig;
 
-    /* Shots depend on the aspect ratio only, so resolve them when it changes. */
-    const key = `${store.mobile}-${store.reduced}-${aspect.toFixed(4)}`;
+    /* Shots depend on the aspect ratio and the measured copy, so resolve them when either changes. */
+    const band = store.mobile ? store.heroFrame : null;
+    const key = `${layout}-${store.reduced}-${aspect.toFixed(4)}-${band?.top.toFixed(3)}-${band?.bottom.toFixed(3)}`;
     if (key !== current.key) {
       current.key = key;
-      current.from = resolveShot(store.reduced ? set.REST : set.SHOT_0, aspect);
-      current.to = resolveShot(store.reduced ? set.REST : set.SHOT_1, aspect);
+      let placement = HOLE[layout];
+      if (store.reduced) {
+        /* One still frame: the finished cascade, scaled to sit beside or under the copy. */
+        const still = stillFrame(layout, band);
+        placement = still.hole;
+        current.from = resolveShot(still.shot, aspect);
+        current.to = resolveShot(still.shot, aspect);
+        current.cascade = resolveShot(still.shot, aspect);
+      } else {
+        /* Phone: the whole pile, fitted between the copy and the scroll hint. */
+        const opening = (band && fitShot(set.SHOT_0, band)) || set.SHOT_0;
+        current.from = resolveShot(opening, aspect);
+        current.to = resolveShot(set.SHOT_1, aspect);
+        current.cascade = resolveShot(set.SHOT_C, aspect);
+      }
       current.push = resolveShot(set.SHOT_2, aspect);
-      current.tilt = resolveShot(set.SHOT_3, aspect);
-      current.river = resolveShot(set.SHOT_3B, aspect);
+
+      /* The hole is placed on screen in the cascade shot, then every stream is laid out to it. */
+      placeHole(current.cascade, aspect, placement, current.hole);
+      cascade.layout(current.hole.centre, current.hole.radius);
+      current.tilt = resolveShot(
+        riverShot(set.SHOT_3, current.hole.centre, current.hole.radius),
+        aspect,
+      );
+      current.river = resolveShot(
+        riverShot(set.SHOT_3B, current.hole.centre, current.hole.radius),
+        aspect,
+      );
+
       const centre = rig.melts.find((melt) => melt.hasScreen && melt.order === WORK_SCREEN_ORDER);
       current.screen = centre ? resolveScreenShot(centre.glass, set.SHOT_1.fov, aspect) : null;
     }
+    cascade.setDetail(store.lite);
     const from = current.from!;
     const to = current.to!;
+    const down = current.cascade!;
 
-    /* Reduced motion holds the finished picture: bars on, pool full, clock stopped. */
-    const progress = store.reduced ? 1 : store.progress;
-    /* Beat 3 owns the scene while its section is on screen; beat 2's tints and moves switch off. */
+    /* Beat 3 owns the scene while its section is on screen; beat 2 tints and moves switch off. */
     const inWork = !store.reduced && store.stage === "work" && current.screen !== null;
     const push = inWork
       ? streamEase(
@@ -348,14 +388,21 @@ function TvPile() {
     const time = store.reduced ? 0 : state.clock.elapsedTime;
     sharedUniforms.uTime.value = time;
 
-    /* Camera: SHOT_0 to SHOT_1, then a slow drift while the screens and the melt play. */
-    const move = cameraEase(clamp01(progress / HERO_BEAT.revealEnd));
-    current.position.lerpVectors(from.position, to.position, move);
-    current.target.lerpVectors(from.target, to.target, move);
+    /*
+     * Camera. The timeline has already eased both moves: opening shot to the whole
+     * pile, then up and back to the shot that also holds the hole.
+     */
+    current.position.lerpVectors(from.position, to.position, hero.reveal);
+    current.target.lerpVectors(from.target, to.target, hero.reveal);
+    current.position.lerp(down.position, hero.follow);
+    current.target.lerp(down.target, hero.follow);
 
     if (!store.reduced) {
-      const hold = smooth(clamp01((progress - HERO_BEAT.revealEnd) / (1 - HERO_BEAT.revealEnd)));
-      const swing = store.mobile ? 0 : DESKTOP_SWING_DEG * Math.sin(Math.PI * move);
+      /* A slow drift for as long as the beat plays, so the hold is never a frozen frame. */
+      const hold = smooth(
+        clamp01((store.progress - HERO_BEAT.revealEnd) / (1 - HERO_BEAT.revealEnd)),
+      );
+      const swing = store.mobile ? 0 : DESKTOP_SWING_DEG * Math.sin(Math.PI * hero.reveal);
       const angle = THREE.MathUtils.degToRad(swing + HOLD_DRIFT_DEG * hold);
       current.offset.subVectors(current.position, current.target);
       const { x, z } = current.offset;
@@ -399,14 +446,16 @@ function TvPile() {
     camera.position.copy(current.position);
     camera.lookAt(current.target);
     const distance = current.position.distanceTo(current.target);
-    if (camera.fov !== to.fov || Math.abs(camera.far - distance * 6) > 1) {
+    /* Far enough to hold the hole, which sits well behind the pile. */
+    const far = Math.max(distance * 6, camera.position.distanceTo(current.hole.centre) * 2.5);
+    if (camera.fov !== to.fov || Math.abs(camera.far - far) > 1) {
       camera.fov = to.fov;
       camera.near = Math.max(distance / 200, 0.05);
-      camera.far = distance * 6;
+      camera.far = far;
       camera.updateProjectionMatrix();
     }
 
-    /* Halftone: deepest layer. It follows 0.3 of the camera's travel, so it lags the pile. */
+    /* Halftone: deepest layer. It follows 0.3 of the camera travel, so it lags the pile. */
     const driftY = (current.position.y - to.position.y) * 0.3;
     const driftZ = (current.position.z - to.position.z) * 0.3;
     rig.halftone.visible = !store.lite;
@@ -419,10 +468,6 @@ function TvPile() {
     disc.uCentre.value.set(HALFTONE_CENTRE.x - driftZ, HALFTONE_CENTRE.y + driftY);
     disc.uAngle.value = time * 0.015;
 
-    /* Screens tune in one by one; before that a bar screen only blips towards a signal. */
-    const grow = smooth(
-      clamp01((progress - HERO_BEAT.growStart) / (HERO_BEAT.growEnd - HERO_BEAT.growStart)),
-    );
     const tick = Math.floor(time * 5);
 
     /* Beat 2: three screens take one colour each, the rest dim, and the river speeds up. */
@@ -436,10 +481,9 @@ function TvPile() {
 
     for (const material of rig.screens) material.uniforms.uDim.value = dim;
     for (const melt of rig.melts) {
+      if (!melt.hasScreen) continue;
       const uniforms = melt.material.uniforms;
-      uniforms.uGrow.value = grow;
-      uniforms.uFlow.value = 1 + 2.2 * flow;
-      uniforms.uSheen.value = store.lite || store.reduced ? 0 : 1 + 1.5 * flow;
+      const slot = hero.streams[melt.order];
 
       const tint = melt.stream < 0 ? 0 : smooth(clamp01(tintPhase - melt.stream));
       uniforms.uTintMix.value = tint;
@@ -453,9 +497,9 @@ function TvPile() {
         chip.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
         chip.style.opacity = (tint * (1 - labelsOut)).toFixed(3);
       }
-      if (!melt.hasScreen) continue;
-      const start = HERO_BEAT.tuneStart + melt.order * HERO_BEAT.tuneStep;
-      let tune = clamp01((progress - start) / HERO_BEAT.tuneLength);
+
+      /* Screens tune in one by one; before that a bar screen only blips towards a signal. */
+      let tune = slot ? slot.tune : 1;
       if (tune === 0 && blip(tick, melt.order) > 0.9) tune = 0.34;
 
       /* Beat 3: the centre screen holds its signal, the others lose theirs as the camera passes. */
@@ -464,6 +508,8 @@ function TvPile() {
         tune *= 1 - smooth(clamp01((store.work - WORK_BEAT.pushStart) / 0.22));
       }
       uniforms.uTune.value = tune;
+      /* Up close the centre screen is the frame for the work, so it goes back to clean bars. */
+      uniforms.uMelt.value = (slot ? slot.melt : 1) * (1 - push);
       uniforms.uCrt.value = centre ? 1 - push : 1;
     }
     for (const glint of rig.glints) {
@@ -471,6 +517,76 @@ function TvPile() {
       const lit = (owner?.material.uniforms.uTune.value ?? 0) > 0.75;
       /* The highlight is a flat plane; at full screen it would read as a white shape. */
       glint.mesh.visible = lit && !(owner?.order === WORK_SCREEN_ORDER && push > 0.25);
+    }
+
+    /* The hole. Its radius comes straight from the timeline, overshoot included. */
+    const open = hero.hole * (1 - push);
+    cascade.hole.ground.visible = open > 0.001;
+    cascade.hole.well.visible = open > 0.001;
+    cascade.hole.ground.material.uniforms.uOpen.value = open;
+    cascade.hole.ground.material.uniforms.uDots.value = store.lite ? 0 : 1;
+    cascade.hole.well.scale.set(
+      current.hole.radius * open,
+      current.hole.radius,
+      current.hole.radius * open,
+    );
+    const farPaint = camera.position.distanceTo(current.hole.centre);
+
+    /*
+     * The paint. Position along the path, drop and strand all come from the
+     * timeline. The only thing integrated here is a small spring that trails the
+     * leading edge: while the paint moves its lag bows the strand sideways, and
+     * when the scroll stops it rings down to nothing within half a second.
+     */
+    const step = Math.min(delta, 1 / 30);
+    for (const paint of cascade.streams) {
+      const slot = hero.streams[paint.order];
+      const uniforms = paint.mesh.material.uniforms;
+      const visible = slot.head > 0 && push < 0.45;
+      paint.mesh.visible = visible;
+      if (!visible) {
+        paint.lag.value = slot.head;
+        paint.lag.velocity = 0;
+        continue;
+      }
+
+      /* The timeline head runs 0 to 1; the first STREAM_LIP of it is the run to the cabinet lip. */
+      const head =
+        slot.head < STREAM_LIP
+          ? (slot.head / STREAM_LIP) * paint.lip
+          : paint.lip + ((slot.head - STREAM_LIP) / (1 - STREAM_LIP)) * (paint.length - paint.lip);
+
+      let drag = 0;
+      if (store.reduced) {
+        paint.lag.value = slot.head;
+        paint.lag.velocity = 0;
+      } else {
+        const lag = paint.lag;
+        lag.velocity += (150 * (slot.head - lag.value) - 13 * lag.velocity) * step;
+        lag.value += lag.velocity * step;
+        drag = THREE.MathUtils.clamp((slot.head - lag.value) * 5, -0.6, 0.6);
+      }
+
+      const melt = rig.melts.find((item) => item.hasScreen && item.order === paint.order);
+      const landed = smooth(clamp01((slot.head - 0.96) / 0.04));
+      uniforms.uHead.value = head;
+      uniforms.uSwell.value = slot.swell;
+      uniforms.uStretch.value = slot.stretch;
+      uniforms.uBody.value = slot.body;
+      /* Alternate sides, so neighbouring strands do not swing as one sheet. */
+      uniforms.uSway.value = (slot.sway + drag) * (paint.order % 2 === 0 ? 1 : -1);
+      /* Once it has landed the strand breathes, slowly. Lite devices and reduced motion keep it still. */
+      uniforms.uBreath.value = store.lite || store.reduced ? 0 : landed;
+      /* Colour bands and beads travel with the paint, then keep a slow drift of their own. */
+      uniforms.uPhase.value =
+        head * 0.55 + (store.lite ? 0 : time * (0.5 + 1.6 * flow) * (0.4 + 0.6 * landed));
+      /* Beat 3 goes into one screen; the paint is gone before the glass fills the viewport. */
+      uniforms.uScale.value = 1 - clamp01(push * 2.2);
+      uniforms.uTintMix.value = melt ? melt.material.uniforms.uTintMix.value : 0;
+      if (melt && melt.stream >= 0) uniforms.uTint.value.copy(melt.material.uniforms.uTint.value);
+      uniforms.uDim.value = melt && melt.stream >= 0 ? 1 : dim;
+      uniforms.uGloss.value = 1 + 0.6 * flow;
+      uniforms.uFar.value = farPaint;
     }
 
     if (!current.drawn) {

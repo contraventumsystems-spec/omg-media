@@ -89,8 +89,8 @@ export const shots = {
       elevation: 22,
       fov: 45,
       frame: [PILE.width, 19],
-      fill: [0.86, 0.74],
-      pedestal: -0.44,
+      fill: [0.8, 0.74],
+      pedestal: -0.36,
     },
     /** Beat 2. The three stream screens span the width, under the heading. */
     SHOT_2: {
@@ -167,7 +167,7 @@ export const shots = {
       fov: 35,
       frame: [24, 19],
       fill: [0.5, 0.52],
-      pedestal: -0.42,
+      pedestal: -0.34,
     },
     SHOT_2: {
       target: [5, 7.3, -1.6],
@@ -295,11 +295,13 @@ export type HolePlacement = {
   depth: number
   /** Radius, as a share of half the viewport width at that depth. */
   radius: number
+  /** Sideways position: 0 is the centre, 1 the right edge. */
+  across?: number
 }
 
 export const HOLE: Record<"mobile" | "desktop", HolePlacement> = {
-  mobile: { at: -0.42, depth: 1.6, radius: 0.44 },
-  desktop: { at: -0.54, depth: 1.6, radius: 0.17 },
+  mobile: { at: -0.46, depth: 1.6, radius: 0.44 },
+  desktop: { at: -0.6, depth: 1.6, radius: 0.17 },
 }
 
 export function placeHole(
@@ -317,6 +319,7 @@ export function placeHole(
     .copy(shot.position)
     .addScaledVector(forward, depth)
     .addScaledVector(up, placement.at * depth * tanV)
+    .addScaledVector(right, (placement.across ?? 0) * depth * tanV * aspect)
   out.radius = placement.radius * depth * tanV * aspect
   return out
 }
@@ -327,5 +330,45 @@ export function riverShot(base: Shot, centre: THREE.Vector3, radius: number): Sh
     ...base,
     target: [centre.x, centre.y + radius * 0.5, centre.z],
     frame: [radius * 3, radius * 3.2],
+  }
+}
+
+/**
+ * Reduced motion: the finished cascade as one still frame. It is the cascade shot
+ * made smaller and moved, with the hole moved by the same amount, so the pile and
+ * the hole keep their arrangement. On a phone it fits the free band under the
+ * copy; on a desktop it sits in the right-hand column beside it.
+ */
+export function stillFrame(
+  layout: "mobile" | "desktop",
+  band: { top: number; bottom: number } | null,
+): { shot: Shot; hole: HolePlacement } {
+  const base: Shot = shots[layout].SHOT_C
+  const hole = HOLE[layout]
+  /* Pile top to hole bottom takes about this share of the canvas height in the cascade shot. */
+  const span = 0.7
+  let scale = 1
+  let lift = 0
+  let truck = 0
+  if (layout === "desktop") {
+    scale = 0.74
+    truck = 0.44
+  } else if (band) {
+    scale = Math.min(1, (band.bottom - band.top) / span)
+    lift = 1 - (band.top + band.bottom)
+  }
+  return {
+    shot: {
+      ...base,
+      fill: [base.fill[0] * scale, base.fill[1] * scale],
+      pedestal: (base.pedestal ?? 0) * scale - lift,
+      truck,
+    },
+    hole: {
+      ...hole,
+      at: hole.at * scale + lift,
+      radius: hole.radius * scale,
+      across: truck,
+    },
   }
 }

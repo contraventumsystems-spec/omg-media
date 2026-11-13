@@ -176,8 +176,8 @@ const FILM = 0.035
 /** Thickness of the paint while it is still a film on the glass. */
 const FILM_DEPTH = 0.04
 /** Radius of a strand in free fall, before its own variation. */
-const STRAND = 0.3
-const DROP = 0.62
+const STRAND = 0.23
+const DROP = 0.56
 
 function streamPath(
   glass: GlassFrame,
@@ -198,7 +198,7 @@ function streamPath(
       .addScaledVector(normal, out)
 
   /* Inside the screen: the paint wells up just above the middle of the glass and runs down it. */
-  const well = at(0, halfHeight * 0.16, FILM)
+  const well = at(0, -halfHeight * 0.3, FILM)
   const sill = at(0, -halfHeight * 0.97, FILM)
   /* Over the cabinet's lower edge, which stands proud of the glass. */
   const lip = at(0, -halfHeight - 0.34 * size, FILM + 0.42 * size)
@@ -213,7 +213,7 @@ function streamPath(
   const foot = new THREE.Vector3(
     Math.max(front + 0.9, drop.x + 0.5) + random(seed, 1) * 0.9,
     -0.6 - random(seed, 2) * 0.8,
-    THREE.MathUtils.lerp(drop.z, hole.centre.z, 0.3) + spread * halfWidth * 1.2,
+    THREE.MathUtils.lerp(drop.z, hole.centre.z, 0.1) + spread * 1.4,
   )
   if (drop.y - foot.y > 3) {
     const bow = drop.clone().lerp(foot, 0.52)
@@ -228,23 +228,28 @@ function streamPath(
    * towards the hole: it drops fast first and drifts back late, a long curve
    * rather than a straight line. Each stream enters at its own place on the near rim.
    */
-  const angle = THREE.MathUtils.degToRad(spread * 120)
+  const angle = THREE.MathUtils.degToRad(spread * 150)
   const rim = new THREE.Vector3(Math.cos(angle), 0, -Math.sin(angle))
-  const entry = hole.centre.clone().addScaledVector(rim, hole.radius * 0.46)
-  const toward = (fall: number, drift: number) =>
+  const entry = hole.centre.clone().addScaledVector(rim, hole.radius * 0.5)
+  /* `wander` bends the upper part of the fall only; the approach to the rim stays a clean arc. */
+  const toward = (fall: number, drift: number, wander: number) =>
     new THREE.Vector3(
       THREE.MathUtils.lerp(foot.x, entry.x, drift),
       THREE.MathUtils.lerp(foot.y, entry.y, fall),
-      THREE.MathUtils.lerp(foot.z, entry.z, drift) + (random(seed, 3 + fall) - 0.5) * 1.6,
+      THREE.MathUtils.lerp(foot.z, entry.z, drift) + (random(seed, 3 + fall) - 0.5) * wander,
     )
-  points.push(toward(0.3, 0.06), toward(0.62, 0.34), toward(0.88, 0.8))
-  points.push(entry.clone().setY(entry.y + hole.radius * 0.05))
-  /* Down the well, easing in towards its axis. */
+  points.push(toward(0.3, 0.05, 1.8), toward(0.58, 0.3, 1.2), toward(0.8, 0.66, 0), toward(0.93, 0.9, 0))
+  /*
+   * Through the opening and down the well. The path crosses the rim already
+   * falling, with no control point on the rim itself: a point there makes a
+   * corner, and the spline answers a corner with a small hook.
+   */
+  points.push(entry.clone().setY(entry.y - hole.radius * 0.4))
   points.push(
     hole.centre
       .clone()
-      .addScaledVector(rim, hole.radius * 0.36)
-      .setY(hole.centre.y - hole.radius * 1.25),
+      .addScaledVector(rim, hole.radius * 0.46)
+      .setY(hole.centre.y - hole.radius * 1.3),
   )
 
   const glassRun = well.distanceTo(sill)
@@ -277,7 +282,7 @@ function streamGeometry(
     const t = i / (rings - 1)
     return t < 0.22
       ? (t / 0.22) * lipShare * 1.6
-      : lipShare * 1.6 + (1 - lipShare * 1.6) * Math.pow((t - 0.22) / 0.78, 1.35)
+      : lipShare * 1.6 + (1 - lipShare * 1.6) * Math.pow((t - 0.22) / 0.78, 1.15)
   }
 
   const count3 = rings * sides * 3
@@ -293,8 +298,8 @@ function streamGeometry(
   const side = glass.right.clone()
   const out = new THREE.Vector3()
   const filmWidth = path.halfWidth * 0.95
-  const cap = path.glassRun * 0.5
-  const narrow = 1.4 + 2.2 * path.size
+  const cap = path.glassRun * 0.32
+  const narrow = 0.5 + 1.0 * path.size
   const strand = STRAND * (0.85 + 0.35 * random(seed, 7))
   const phaseA = random(seed, 8) * 6.28
   const phaseB = random(seed, 9) * 6.28
@@ -312,12 +317,12 @@ function streamGeometry(
     /* Organic edge: two slow waves, plus a strand that is fatter far away so depth does not erase it. */
     const wobble = 1 + 0.18 * Math.sin(arc * 0.9 + phaseA) + 0.1 * Math.sin(arc * 2.3 + phaseB)
     const far = THREE.MathUtils.smoothstep(u, 0.3, 1)
-    const thread = strand * wobble * (1 + 0.55 * far)
+    const thread = strand * wobble * (1 + 0.3 * far)
 
     /* On the glass: a rounded surface that widens to the full picture. Then it gathers into a strand. */
     const rise = Math.min(arc / cap, 1)
     const film = filmWidth * Math.sqrt(1 - (1 - rise) * (1 - rise))
-    const gathered = THREE.MathUtils.smoothstep((arc - path.glassRun) / narrow, 0, 1)
+    const gathered = THREE.MathUtils.smoothstep((arc - path.glassRun * 0.6) / narrow, 0, 1)
     const blend = Math.pow(gathered, 0.6)
     const halfWidth = THREE.MathUtils.lerp(film, thread, blend)
     const halfDepth = THREE.MathUtils.lerp(FILM_DEPTH, thread * 0.82, blend)
@@ -408,9 +413,13 @@ export function createCascade(sources: StreamSource[], front: number): Cascade {
   group.add(ground, well)
   const hole = { centre: new THREE.Vector3(), radius: 1, ground, well }
 
+  /* Entry points on the rim follow the screens left to right, so strands do not cross on the way down. */
+  const leftToRight = [...sources].sort((a, b) => b.glass.centre.z - a.glass.centre.z)
+
   const build = () => {
-    streams.forEach((stream, slot) => {
-      const source = sources[slot]
+    streams.forEach((stream, index) => {
+      const source = sources[index]
+      const slot = leftToRight.indexOf(source)
       const { length, lip, filmWidth } = streamGeometry(
         stream.mesh.geometry,
         stream.glass,

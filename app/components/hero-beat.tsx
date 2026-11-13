@@ -4,15 +4,23 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
-import { HERO_BEAT, useSceneStore } from "@/app/lib/scene-store";
+import { buildHeroTimeline, HERO_BEAT, heroRig, resetHeroRig } from "@/app/lib/hero-rig";
+import { useSceneStore } from "@/app/lib/scene-store";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+/*
+ * A phone's address bar slides away on the first swipe and resizes the window.
+ * Every height in the beat is in svh, which does not change when that happens,
+ * so there is nothing to re-measure: a refresh there would only make the scrub jump.
+ */
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 /** The story of the beat: static, then a signal, then a shape. */
 const STAGES = [
   { label: "Zgomot", from: 0 },
   { label: "Semnal", from: HERO_BEAT.tuneStart },
-  { label: "Formă", from: HERO_BEAT.growStart },
+  { label: "Formă", from: HERO_BEAT.pourStart },
 ] as const;
 
 function stageAt(progress: number) {
@@ -28,8 +36,15 @@ function stageAt(progress: number) {
  *
  * The hero is a tall section with nothing pinned by JavaScript: the canvas is
  * already fixed, the copy scrolls away at page speed, and this layer is CSS sticky.
- * ScrollTrigger only measures. It writes the scrubbed progress to the store, and
- * the canvas reads it in useFrame. scrub: 0.6 makes the scene trail the thumb a little.
+ * So there is no pin to release at the end: the page simply scrolls on.
+ *
+ * ScrollTrigger scrubs one master timeline (app/lib/hero-rig.ts) over the height
+ * of the section. The timeline writes plain numbers, the canvas reads them in
+ * useFrame. scrub: 0.6 makes the scene trail the thumb a little, forwards and back.
+ *
+ * It also measures the first viewport for the canvas: where the copy ends and
+ * where the scroll hint begins. On a phone the opening shot fits the whole pile
+ * into that band, so the type and the televisions never share a pixel.
  */
 export function HeroBeat() {
   const root = useRef<HTMLDivElement>(null);
@@ -41,18 +56,49 @@ export function HeroBeat() {
       if (!hud || !hero) return;
 
       const copy = hero.querySelector<HTMLElement>("[data-hero-copy]");
+      const copyEnd = hero.querySelector<HTMLElement>("[data-hero-copy-end]");
+      const tall = hero.querySelector<HTMLElement>("[data-hero-lvh]");
       const bar = hud.querySelector<HTMLElement>("[data-hero-bar]");
       const hint = hud.querySelector<HTMLElement>("[data-hero-hint]");
       const readout = hud.querySelector<HTMLElement>("[data-hero-readout]");
       const stages = Array.from(hud.querySelectorAll<HTMLElement>("[data-hero-stage]"));
+
+      /* The free band of the first viewport, as shares of the canvas height (100lvh). */
+      const measure = () => {
+        if (!copy || !copyEnd || !tall) return;
+        const canvasHeight = tall.offsetHeight;
+        const viewHeight = copy.offsetHeight;
+        if (canvasHeight === 0 || viewHeight === 0) return;
+        const copyBottom = copyEnd.getBoundingClientRect().bottom - copy.getBoundingClientRect().top;
+        /* Clear space under the buttons, and room at the bottom for the scroll hint. */
+        const gap = Math.max(28, viewHeight * 0.045);
+        const foot = Math.max(72, viewHeight * 0.1);
+        const top = (copyBottom + gap) / canvasHeight;
+        const bottom = (viewHeight - foot) / canvasHeight;
+        const previous = useSceneStore.getState().heroFrame;
+        if (
+          previous &&
+          Math.abs(previous.top - top) < 0.002 &&
+          Math.abs(previous.bottom - bottom) < 0.002
+        ) {
+          return;
+        }
+        useSceneStore.setState({ heroFrame: { top, bottom } });
+      };
+      measure();
+      /* Fires when the fonts land and when the copy rewraps, which a window listener would miss. */
+      const observer = new ResizeObserver(measure);
+      if (copy) observer.observe(copy);
+      if (copyEnd) observer.observe(copyEnd);
+
       const media = gsap.matchMedia();
 
       media.add("(prefers-reduced-motion: no-preference)", () => {
-        const beat = { progress: 0 };
+        const master = buildHeroTimeline(heroRig);
         let stage = -1;
 
         const apply = () => {
-          const progress = beat.progress;
+          const progress = master.progress();
           useSceneStore.setState({ progress });
           if (bar) bar.style.transform = `scaleX(${progress})`;
           /* The hint and the readout share the bottom edge: one leaves as the other arrives. */
@@ -66,17 +112,14 @@ export function HeroBeat() {
             });
           }
         };
+        master.eventCallback("onUpdate", apply);
 
-        gsap.to(beat, {
-          progress: 1,
-          ease: "none",
-          onUpdate: apply,
-          scrollTrigger: {
-            trigger: hero,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.6,
-          },
+        ScrollTrigger.create({
+          animation: master,
+          trigger: hero,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 0.6,
         });
         apply();
 
@@ -88,15 +131,21 @@ export function HeroBeat() {
             scrollTrigger: {
               trigger: hero,
               start: "top top",
-              end: () => `+=${window.innerHeight * 0.5}`,
+              end: () => `+=${copy.offsetHeight * 0.42}`,
               scrub: true,
               invalidateOnRefresh: true,
             },
           });
         }
 
-        return () => useSceneStore.setState({ progress: 0 });
+        /* matchMedia reverts the timeline and both triggers; the rig is plain data, so reset it by hand. */
+        return () => {
+          resetHeroRig();
+          useSceneStore.setState({ progress: 0 });
+        };
       });
+
+      return () => observer.disconnect();
     },
     { scope: root },
   );
@@ -107,7 +156,7 @@ export function HeroBeat() {
       aria-hidden="true"
       className="pointer-events-none sticky top-0 flex h-svh flex-col justify-end motion-reduce:hidden"
     >
-      <div className="[text-shadow:0_0_14px_#070C0F,0_0_4px_#070C0F]">
+      <div className="[text-shadow:0_0_14px_#15110D,0_0_4px_#15110D]">
         <div className="relative mx-auto flex w-full max-w-6xl items-end px-5 pb-6 md:px-10 md:pb-8">
           <div data-hero-readout className="w-full max-w-xs opacity-0 md:max-w-sm">
             <ol className="flex gap-5 text-[11px] tracking-[0.14em] uppercase md:gap-7 md:text-xs">

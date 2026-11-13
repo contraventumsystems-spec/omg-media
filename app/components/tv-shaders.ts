@@ -54,7 +54,7 @@ const COMMON = /* glsl */ `
     float x = fract(hue) * 7.0;
     int index = int(min(floor(x), 6.0));
     int next = index == 6 ? 0 : index + 1;
-    return mix(uLiquid[index], uLiquid[next], smoothstep(0.5, 1.0, fract(x)));
+    return mix(uLiquid[index], uLiquid[next], smoothstep(0.3, 1.0, fract(x)));
   }
 
   /* Across a screen the paint keeps the bar order, so bars can turn to paint in place. */
@@ -298,6 +298,7 @@ const STREAM_VERTEX = /* glsl */ `
   varying vec3 vNormal;
   varying float vArc;
   varying float vAcross;
+  varying float vFree;
 
   void main() {
     float arc = aArc;
@@ -313,7 +314,7 @@ const STREAM_VERTEX = /* glsl */ `
 
     /* Beads: slow swellings that ride down the strand with the paint. */
     float bead = smoothstep(0.5, 1.0, sin((arc - uPhase) * 1.25 + uSeed * 9.0));
-    thick *= 1.0 + 0.34 * bead * free;
+    thick *= 1.0 + 0.26 * bead * free;
 
     /* The front of the paint is round, with or without a drop on it. */
     float front = sqrt(clamp(behind / 0.3, 0.0, 1.0));
@@ -347,6 +348,7 @@ const STREAM_VERTEX = /* glsl */ `
     vNormal = aSide * aRing.x * (halfDepth + 0.0001) + aOut * aRing.y * (halfWidth + 0.0001);
     vArc = arc;
     vAcross = aRing.x;
+    vFree = free;
     gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
   }
 `
@@ -370,6 +372,7 @@ const STREAM_FRAGMENT = /* glsl */ `
   varying vec3 vNormal;
   varying float vArc;
   varying float vAcross;
+  varying float vFree;
 
   void main() {
     vec3 normal = normalize(vNormal);
@@ -382,20 +385,26 @@ const STREAM_FRAGMENT = /* glsl */ `
      */
     float along = smoothstep(uLip * 0.6, uLip + 2.6, vArc);
     float stripe = clamp(uStripe.x + uStripe.y * vAcross, 0.0, 0.999);
-    float hue = stripeHue(stripe) * mix(1.0, 0.22, along)
-      + along * ((vArc - uPhase) * 0.075 + uSeed);
+    float hue = stripeHue(stripe) * (1.0 - along)
+      + along * ((vArc - uPhase) * 0.034 + uSeed);
     vec3 paint = mix(liquid(hue), uTint, uTintMix) * uDim;
 
+    /*
+     * Volume grows with the paint. On the glass it is a film with no edge of its
+     * own, so it reads as the picture itself; in free fall it is a round strand.
+     */
+    float volume = 0.15 + 0.85 * vFree;
+
     /* Thickness: the paint is darker where the surface turns away, with an ink line at the edge. */
-    vec3 color = paint * mix(0.5, 1.0, pow(facing, 0.7));
+    vec3 color = paint * mix(1.0, mix(0.5, 1.0, pow(facing, 0.7)), volume);
     /* A little of the next colour in the turn of the surface, as if the stream beside it showed in it. */
-    color = mix(color, liquid(hue + 0.16) * uDim, 0.2 * pow(1.0 - facing, 2.0) * uGloss);
-    color *= mix(0.3, 1.0, smoothstep(0.0, 0.3, facing));
+    color = mix(color, liquid(hue + 0.16) * uDim, 0.22 * pow(1.0 - facing, 2.0) * uGloss * volume);
+    color *= mix(1.0, mix(0.3, 1.0, smoothstep(0.0, 0.3, facing)), volume);
 
     /* Wet: one small hard light and a wide soft one, from above and in front. */
     vec3 light = normalize(vec3(0.55, 0.8, 0.25));
     float glint = max(dot(normal, normalize(light + view)), 0.0);
-    color += uGloss * uDim * (0.62 * pow(glint, 56.0) + 0.11 * pow(glint, 7.0)) * uPaper;
+    color += uGloss * uDim * volume * (0.85 * pow(glint, 36.0) + 0.2 * pow(glint, 6.0)) * uPaper;
 
     /* Depth: far paint sinks a little into the page, and it goes black as it drops into the hole. */
     float distanceToEye = distance(cameraPosition, vWorld);

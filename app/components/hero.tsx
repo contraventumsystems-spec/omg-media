@@ -3,26 +3,37 @@ import { ExploreButton, HeroBeat } from "@/app/components/hero-beat";
 import { whatsappHref } from "@/app/lib/site";
 
 /**
- * Hero beat. The section is 100svh of copy plus 220svh of scroll for the pile:
- * reveal (0 to 35%), screens tune in (35 to 70%), melt and pool (70 to 100%).
- * Change the scroll length in the height class below; nothing else depends on it.
- * Reduced motion collapses it to one viewport with a still pile.
+ * Hero beat. The section is 100svh of copy plus 240svh of scroll for the pile:
+ *   0 to 26%    the pile grows from under the copy to fill the viewport
+ *   17 to 45%   the bar screens tune in
+ *   36 to 86%   paint pours from the screens and falls to the hole
+ *   86 to 100%  everything comes to rest and holds, then the page scrolls on
+ * The times live in app/lib/hero-rig.ts. Change the scroll length in the height
+ * class below; nothing else depends on it. Heights are in svh, so a phone's
+ * address bar sliding away does not move anything.
+ * Reduced motion collapses it to one viewport with a still frame of the finished scene.
  */
 export function Hero() {
   return (
-    <section id="hero" data-scene-stage className="relative h-[320svh] motion-reduce:h-svh">
+    <section id="hero" data-scene-stage className="relative h-[340svh] motion-reduce:h-svh">
+      {/* Height of the canvas (the large viewport). Measured, never seen. */}
+      <div
+        aria-hidden="true"
+        data-hero-lvh
+        className="pointer-events-none invisible absolute top-0 left-0 h-lvh w-px"
+      />
       <HeroBeat />
 
       {/* First viewport. In normal flow of the section top, so it leaves at page speed. */}
       <div data-hero-copy className="absolute inset-x-0 top-0 h-svh">
-        {/* Phone: darken the top so the type sits clear of the halftone. Desktop: darken the left column. */}
+        {/* Phone: the page colour runs solid behind the copy and lets go just under it. Desktop: it holds the left column. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,#070C0F_0%,rgba(7,12,15,0.9)_38%,transparent_64%)] md:hidden"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,#15110D_0%,rgba(21,17,13,0.92)_36%,transparent_58%)] md:hidden"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,#070C0F_0%,rgba(7,12,15,0.9)_24%,rgba(7,12,15,0.3)_44%,transparent_60%)] md:block"
+          className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,#15110D_0%,rgba(21,17,13,0.9)_24%,rgba(21,17,13,0.3)_44%,transparent_60%)] md:block"
         />
         <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col px-5 pt-32 pb-28 md:justify-center md:px-10 md:pt-14">
           <div className="max-w-xl">
@@ -39,7 +50,8 @@ export function Hero() {
             <p className="mt-5 max-w-md text-base leading-normal text-platinum md:mt-7 md:text-lg md:leading-relaxed">
               Punem strategia, designul și tehnologia în aceeași direcție.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-5 md:mt-10">
+            {/* The canvas measures the bottom of this row: on a phone the pile starts below it. */}
+            <div data-hero-copy-end className="mt-8 flex flex-wrap items-center gap-5 md:mt-10">
               <ExploreButton className="inline-flex h-12 cursor-pointer items-center rounded-full bg-eggshell px-6 text-[15px] font-medium text-background transition-colors duration-200 hover:bg-bar-white" />
               <a
                 href={whatsappHref()}
