@@ -51,7 +51,7 @@ export function Services() {
           <div
             aria-hidden="true"
             data-stream-scrim
-            className="pointer-events-none absolute inset-x-0 top-0 h-[46svh] bg-[linear-gradient(to_bottom,#070C0F_0%,rgba(7,12,15,0.86)_55%,transparent_100%)] motion-reduce:hidden"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[46svh] bg-[linear-gradient(to_bottom,#15110D_0%,rgba(21,17,13,0.86)_55%,transparent_100%)] motion-reduce:hidden"
           />
           <div
             data-stream-heading
@@ -74,7 +74,7 @@ export function Services() {
       <div className="relative z-10 -mt-[67svh] motion-reduce:mt-0">
         <div
           aria-hidden="true"
-          className="h-20 bg-[linear-gradient(to_bottom,transparent,#070C0F)] motion-reduce:hidden"
+          className="h-20 bg-[linear-gradient(to_bottom,transparent,#15110D)] motion-reduce:hidden"
         />
         {/* At least one viewport tall, so the canvas is fully hidden when the camera changes beat. */}
         <div className="min-h-svh bg-background px-5 pt-8 pb-20 md:px-10 md:pt-10 md:pb-28">

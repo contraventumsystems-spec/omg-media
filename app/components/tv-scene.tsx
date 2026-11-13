@@ -5,14 +5,16 @@ import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { type Cascade, createCascade, measureGlass, type StreamSource } from "@/app/components/tv-cascade";
 import {
   createHalftoneMaterial,
   createMeltMaterial,
   createScreenMaterial,
   sharedUniforms,
 } from "@/app/components/tv-shaders";
+import { PAPER_HEX } from "@/app/lib/bars";
+import { createSettledRig, HERO_BEAT, heroRig, MAX_STREAMS, STREAM_LIP } from "@/app/lib/hero-rig";
 import {
-  HERO_BEAT,
   STREAM_BEAT,
   STREAMS,
   WORK_BEAT,
@@ -21,16 +23,20 @@ import {
 } from "@/app/lib/scene-store";
 import {
   DESKTOP_SWING_DEG,
+  fitShot,
   HOLD_DRIFT_DEG,
+  HOLE,
+  placeHole,
   type ResolvedShot,
   resolveShot,
+  riverShot,
   shots,
 } from "@/app/lib/shots";
 
 /**
  * Trimmed copy of the Sketchfab export, written by scripts/trim-model.mjs.
  * No lights: the ink look is the emissive textures, drawn with MeshBasicMaterial.
- * Screens, melt and halftone are shaders, so their textures are never fetched.
+ * Screens, paint and halftone are shaders, so their textures are never fetched.
  */
 const TV_MODEL_URL = "/models/tv-pile.gltf";
 
@@ -62,7 +68,13 @@ type Rig = {
   screens: THREE.ShaderMaterial[];
   glints: { mesh: THREE.Mesh; melt: Melt | null }[];
   halftone: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+  cascade: Cascade;
 };
+
+/** The ink sheets are grey on white. A little of the paper colour keeps them off video white. */
+const INK_TINT = new THREE.Color(PAPER_HEX).lerp(new THREE.Color("#ffffff"), 0.35);
+/** Reduced motion and the still frame read this instead of the live rig. */
+const SETTLED = createSettledRig();
 
 function materialName(mesh: THREE.Mesh) {
   const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
@@ -77,7 +89,7 @@ function buildPile(source: THREE.Group): Rig {
   const ink = new Map<string, THREE.MeshBasicMaterial>();
   const body = new THREE.MeshBasicMaterial({ color: "#000000", toneMapped: false });
   const glint = new THREE.MeshBasicMaterial({
-    color: "#F9FAFE",
+    color: PAPER_HEX,
     toneMapped: false,
     side: THREE.DoubleSide,
   });
@@ -85,6 +97,8 @@ function buildPile(source: THREE.Group): Rig {
   const screens: THREE.ShaderMaterial[] = [];
   const glintMeshes: THREE.Mesh[] = [];
   const scale = new THREE.Vector3();
+  /* Forward-most face of the cabinets. The paint has to fall clear of it. */
+  const cabinets = new THREE.Box3();
   let seed = 0;
 
   root.traverse((obj) => {
@@ -101,7 +115,7 @@ function buildPile(source: THREE.Group): Rig {
         // The emissive factor keeps the two ink sheets at their authored strength.
         material = new THREE.MeshBasicMaterial({
           map: original.emissiveMap,
-          color: original.emissive.clone(),
+          color: original.emissive.clone().multiply(INK_TINT),
           toneMapped: false,
           side: original.side,
         });
@@ -109,6 +123,7 @@ function buildPile(source: THREE.Group): Rig {
         ink.set(original.uuid, material);
       }
       mesh.material = material;
+      cabinets.expandByObject(mesh);
       return;
     }
 
@@ -130,11 +145,10 @@ function buildPile(source: THREE.Group): Rig {
         seed: seed * 0.173,
         top: box.max.y,
         screenBottom,
-        floor: box.min.y,
-        hasScreen,
-        onGround: box.min.y < 0.45,
       });
       mesh.material = material;
+      /* A mesh with no glass was only ever a drip or a share of the pool. The streams replace both. */
+      mesh.visible = hasScreen;
       melts.push({
         material,
         hasScreen,
@@ -209,7 +223,18 @@ function buildPile(source: THREE.Group): Rig {
   halftone.renderOrder = -1;
   root.add(halftone);
 
-  return { root, melts, screens, glints, halftone };
+  /* One stream per bar screen, in pile order, which is also its slot in the hero rig. */
+  const sources: StreamSource[] = [];
+  for (const melt of melts) {
+    if (!melt.hasScreen || melt.order >= MAX_STREAMS) continue;
+    const glass = measureGlass(melt.mesh, melt.screenBottom);
+    if (glass) sources.push({ order: melt.order, glass, seed: melt.order + 1 });
+  }
+  sources.sort((a, b) => a.order - b.order);
+  const cascade = createCascade(sources, cabinets.isEmpty() ? 10 : cabinets.max.x);
+  root.add(cascade.group);
+
+  return { root, melts, screens, glints, halftone, cascade };
 }
 
 /**

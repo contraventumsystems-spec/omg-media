@@ -1,18 +1,23 @@
 @import "tailwindcss";
 
-/* Page palette sampled from the brief. One bar colour per section; the full sequence stays on the river line. */
+/*
+ * Page palette. The ground is the warm lamp-black of a 1930s ink-and-paint cel, never
+ * pure black, and the type is aged paper, never pure white. The bars are cel paint:
+ * saturated, a little warm. One bar colour per section; the full sequence stays on the
+ * river line. The same values live in app/lib/bars.ts for the canvas.
+ */
 :root {
-  --background: #070c0f;
-  --eggshell: #edeae3;
-  --platinum: #c8cbcf;
-  --dim: #7b818a;
-  --bar-white: #f9fafe;
-  --bar-yellow: #dede00;
-  --bar-cyan: #0fd3fd;
-  --bar-green: #00e100;
-  --bar-magenta: #e52cfc;
-  --bar-red: #fa0214;
-  --bar-violet: #6d00fe;
+  --background: #15110d;
+  --eggshell: #f3e9d2;
+  --platinum: #d3cab7;
+  --dim: #91887a;
+  --bar-white: #f6efdd;
+  --bar-yellow: #ffd21f;
+  --bar-cyan: #1ec8eb;
+  --bar-green: #27d24c;
+  --bar-magenta: #ee44c6;
+  --bar-red: #f23a22;
+  --bar-violet: #7a45ff;
   color-scheme: dark;
 }
 

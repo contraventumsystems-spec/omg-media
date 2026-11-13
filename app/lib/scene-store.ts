@@ -4,14 +4,21 @@ import { create } from "zustand"
 
 /**
  * The one link between the page and the canvas.
- * ScrollTrigger writes `progress`; the scene reads it inside useFrame through
- * getState(), so scrolling never pushes React state through the mesh tree.
+ * ScrollTrigger writes the beat progress here and scrubs the hero timeline in
+ * app/lib/hero-rig.ts; the scene reads both inside useFrame through getState(),
+ * so scrolling never pushes React state through the mesh tree.
  * Mobile is the aspect ratio under 0.8, matching the shot list.
  */
 type SceneState = {
   mobile: boolean
-  /** Hero beat, 0 at the top of the page and 1 when the pool is full. */
+  /** Hero beat, 0 at the top of the page and 1 when the hero lets go. Drives the readout only. */
   progress: number
+  /**
+   * The free part of the first viewport on a phone, between the hero copy and the
+   * scroll hint, as shares of the canvas height. The opening shot fits the whole
+   * pile into it. Null until the copy has been measured.
+   */
+  heroFrame: { top: number; bottom: number } | null
   /** Beat 2, three streams: 0 as the services arrive, 1 when the list covers the river. */
   stream: number
   /** Beat 3, push-in: 0 as the work section enters from below, 1 when its stage lets go. */
@@ -27,7 +34,7 @@ type SceneState = {
   active: boolean
   /** prefers-reduced-motion: one still frame of the finished pile, no scrubbing. */
   reduced: boolean
-  /** Weak device or low frame rate: DPR 1, no halftone, no pool sheen. */
+  /** Weak device or low frame rate: DPR 1, no halftone, no idle motion in the paint. */
   lite: boolean
   /** The model has been drawn at least once. */
   ready: boolean
@@ -38,6 +45,7 @@ type SceneState = {
 export const useSceneStore = create<SceneState>(() => ({
   mobile: true,
   progress: 0,
+  heroFrame: null,
   stream: 0,
   work: 0,
   stage: "main",
@@ -48,24 +56,6 @@ export const useSceneStore = create<SceneState>(() => ({
   ready: false,
   pointer: { x: 0, y: 0 },
 }))
-
-/**
- * Hero beat ranges on the 0 to 1 progress. One table for the canvas and the DOM,
- * so the camera, the screens and the labels cannot drift apart.
- */
-export const HERO_BEAT = {
-  /** Camera moves from SHOT_0 to SHOT_1. */
-  revealEnd: 0.35,
-  /** Copy is at 40% opacity here and gone at `copyGone`. */
-  copyGone: 0.45,
-  /** Bar screens tune in one by one from here, top of the pile first. */
-  tuneStart: 0.35,
-  tuneStep: 0.055,
-  tuneLength: 0.1,
-  /** The melt grows out of the bar screens and fills the pool. */
-  growStart: 0.68,
-  growEnd: 0.97,
-} as const
 
 /**
  * Beat 2 ranges. Push in on the three screens, tilt down to the pool,
@@ -84,9 +74,9 @@ export const STREAM_BEAT = {
  * the hero tune-in cascade (0 is the top set), which is how the scene finds it.
  */
 export const STREAMS = [
-  { id: "strategie", order: 1, color: "#0FD3FD" },
-  { id: "design", order: 3, color: "#E52CFC" },
-  { id: "tehnologie", order: 2, color: "#00E100" },
+  { id: "strategie", order: 1, color: "#1EC8EB" },
+  { id: "design", order: 3, color: "#EE44C6" },
+  { id: "tehnologie", order: 2, color: "#27D24C" },
 ] as const
 
 /**

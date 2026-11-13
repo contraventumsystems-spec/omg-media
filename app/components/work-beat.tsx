@@ -119,7 +119,7 @@ export function WorkBeat({ channels, children }: { channels: Channel[]; children
       {/* While the canvas shows, keep the heading readable over the pile. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[42svh] bg-[linear-gradient(to_bottom,#070C0F_0%,rgba(7,12,15,0.86)_55%,transparent_100%)] motion-reduce:hidden"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[42svh] bg-[linear-gradient(to_bottom,#15110D_0%,rgba(21,17,13,0.86)_55%,transparent_100%)] motion-reduce:hidden"
       />
 
       <div className="relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 pt-28 pb-20 md:px-10 md:pt-24 md:pb-10">
@@ -141,7 +141,7 @@ export function WorkBeat({ channels, children }: { channels: Channel[]; children
           style={{ color: current.color }}
         >
           {/* The channel. A 4:3 plate that waits for the clip from the video atlas. */}
-          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-[10px] border border-white/15 bg-[#0B1114] md:aspect-auto md:h-full md:w-auto md:max-w-[62%] md:flex-1">
+          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-[10px] border border-white/15 bg-[#1C1712] md:aspect-auto md:h-full md:w-auto md:max-w-[62%] md:flex-1">
             <div
               aria-hidden="true"
               className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,rgba(255,255,255,0.05)_0_1px,transparent_1px_4px)]"

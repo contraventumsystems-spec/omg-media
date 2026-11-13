@@ -52,13 +52,17 @@ export const PILE = {
 export const MOBILE_ASPECT = 0.8
 
 /**
- * Mobile is the master set: the camera cranes down from above the pile.
- * Desktop keeps the faced position at both ends and swings 15 degrees on the way,
+ * Mobile is the master set: the pile starts small under the copy, grows to fill
+ * the width, then the camera rises and looks down the streams to the hole.
+ * Desktop keeps the faced position and swings 15 degrees on the way,
  * moving the pile from the right-hand column to the centre.
  */
 export const shots = {
   mobile: {
-    /** Copy on top, the top sets peeking into the bottom fifth of the viewport. */
+    /**
+     * Fallback opening shot, used only when the space under the copy is too short
+     * to hold the pile (a phone on its side). Normally fitShot() replaces it.
+     */
     SHOT_0: {
       target: PILE.centre,
       azimuth: 0,
@@ -68,15 +72,25 @@ export const shots = {
       fill: [1.12, 0.74],
       pin: { y: PILE.topScreenY, at: -0.68 },
     },
-    /** Whole pile, portrait. The pool's leading edge reaches the bottom. */
+    /** Whole pile, portrait, with a margin on both sides. */
     SHOT_1: {
       target: PILE.centre,
       azimuth: 0,
       elevation: 17,
       fov: 45,
       frame: [PILE.width, 19],
-      fill: [1.12, 0.74],
-      pedestal: -0.12,
+      fill: [0.98, 0.74],
+      pedestal: -0.04,
+    },
+    /** Cascade: the pile moves to the upper third and the hole comes into the lower third. */
+    SHOT_C: {
+      target: PILE.centre,
+      azimuth: 0,
+      elevation: 22,
+      fov: 45,
+      frame: [PILE.width, 19],
+      fill: [0.86, 0.74],
+      pedestal: -0.44,
     },
     /** Beat 2. The three stream screens span the width, under the heading. */
     SHOT_2: {
@@ -88,25 +102,29 @@ export const shots = {
       fill: [1.0, 0.5],
       pedestal: 0.26,
     },
-    /** Tilted down 35 degrees: the pool takes the lower two thirds. */
+    /**
+     * Tilted down 35 degrees onto the hole: the streams come in from the top and
+     * the hole takes the lower half. Target and frame are placeholders; riverShot()
+     * fills them in from the hole once it has been placed.
+     */
     SHOT_3: {
-      target: [9.5, 1.2, -3.6],
+      target: [0, 0, 0],
       azimuth: 0,
       elevation: 35,
       fov: 45,
-      frame: [17, 12],
-      fill: [1.2, 0.7],
-      pedestal: 0.16,
+      frame: [1, 1],
+      fill: [0.92, 0.5],
+      pedestal: 0.24,
     },
-    /** Same tilt, slid along the river so it sits in the top third above the list. */
+    /** Same tilt, slid so the hole sits in the top third above the list. */
     SHOT_3B: {
-      target: [11.5, 0.6, -5],
+      target: [0, 0, 0],
       azimuth: 0,
       elevation: 35,
       fov: 45,
-      frame: [17, 12],
-      fill: [1.2, 0.7],
-      pedestal: -0.42,
+      frame: [1, 1],
+      fill: [0.92, 0.5],
+      pedestal: -0.5,
     },
     /** Still frame for reduced motion: the pile under the copy. */
     REST: {
@@ -138,8 +156,18 @@ export const shots = {
       elevation: 13,
       fov: 35,
       frame: [24, 19],
-      fill: [0.62, 0.8],
-      pedestal: -0.2,
+      fill: [0.62, 0.74],
+      pedestal: -0.1,
+    },
+    /** Cascade: the camera pulls back and rises; pile in the upper half, hole under it. */
+    SHOT_C: {
+      target: PILE.centre,
+      azimuth: 0,
+      elevation: 20,
+      fov: 35,
+      frame: [24, 19],
+      fill: [0.5, 0.52],
+      pedestal: -0.42,
     },
     SHOT_2: {
       target: [5, 7.3, -1.6],
@@ -152,22 +180,22 @@ export const shots = {
       pedestal: 0.14,
     },
     SHOT_3: {
-      target: [9.5, 1.2, -3.6],
+      target: [0, 0, 0],
       azimuth: 0,
       elevation: 35,
       fov: 35,
-      frame: [19, 11],
-      fill: [0.66, 0.8],
-      pedestal: 0.1,
+      frame: [1, 1],
+      fill: [0.44, 0.6],
+      pedestal: 0.16,
     },
     SHOT_3B: {
-      target: [11.5, 0.6, -5],
+      target: [0, 0, 0],
       azimuth: 0,
       elevation: 35,
       fov: 35,
-      frame: [19, 11],
-      fill: [0.66, 0.8],
-      pedestal: -0.36,
+      frame: [1, 1],
+      fill: [0.44, 0.6],
+      pedestal: -0.46,
     },
     REST: {
       target: PILE.centre,
@@ -230,4 +258,74 @@ export function resolveShot(shot: Shot, aspect: number, out?: ResolvedShot): Res
   result.target.addScaledVector(right, slide).addScaledVector(up, rise)
   result.fov = shot.fov
   return result
+}
+
+/**
+ * Opening shot on a phone: the whole pile, fitted into the free band of the first
+ * viewport. `band` is the top and bottom of that band as shares of the canvas
+ * height, measured from the real copy, so the pile clears the buttons on a
+ * 360 px phone and on a tall one without a single pixel offset in the layout.
+ * Returns null when the band is too short to hold a readable pile.
+ */
+export function fitShot(base: Shot, band: { top: number; bottom: number }): Shot | null {
+  const height = band.bottom - band.top
+  if (height < 0.17) return null
+  return {
+    target: PILE.centre,
+    azimuth: 0,
+    elevation: base.elevation,
+    fov: base.fov,
+    /* The pile alone, seen from just above: its height plus a little of its depth. */
+    frame: [PILE.width, 16.2],
+    fill: [0.8, height],
+    /* Centre of the band, as an offset from the centre of the canvas. Positive is down. */
+    pedestal: band.top + band.bottom - 1,
+  }
+}
+
+/**
+ * Where the hole sits in the cascade shot. It is placed by its position on screen
+ * and its depth, not by a world coordinate, so it lands in the same place under
+ * the pile on every aspect ratio.
+ */
+export type HolePlacement = {
+  /** Height in the viewport: 0 is the centre, -1 the bottom edge. */
+  at: number
+  /** Distance from the camera, in multiples of the pile's distance. Above 1 is behind it. */
+  depth: number
+  /** Radius, as a share of half the viewport width at that depth. */
+  radius: number
+}
+
+export const HOLE: Record<"mobile" | "desktop", HolePlacement> = {
+  mobile: { at: -0.42, depth: 1.6, radius: 0.44 },
+  desktop: { at: -0.54, depth: 1.6, radius: 0.17 },
+}
+
+export function placeHole(
+  shot: ResolvedShot,
+  aspect: number,
+  placement: HolePlacement,
+  out: { centre: THREE.Vector3; radius: number },
+) {
+  const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2)
+  const depth = shot.position.distanceTo(shot.target) * placement.depth
+  forward.subVectors(shot.target, shot.position).normalize()
+  right.crossVectors(forward, UP).normalize()
+  up.crossVectors(right, forward)
+  out.centre
+    .copy(shot.position)
+    .addScaledVector(forward, depth)
+    .addScaledVector(up, placement.at * depth * tanV)
+  out.radius = placement.radius * depth * tanV * aspect
+  return out
+}
+
+/** Beat 2 shots look at the hole, so they are completed once it has been placed. */
+export function riverShot(base: Shot, centre: THREE.Vector3, radius: number): Shot {
+  return {
+    ...base,
+    target: [centre.x, centre.y + radius * 0.5, centre.z],
+    frame: [radius * 3, radius * 3.2],
+  }
 }

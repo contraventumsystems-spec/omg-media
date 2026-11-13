@@ -67,28 +67,28 @@ export const services = [
 export const works = [
   {
     channel: "CH 01",
-    color: "#0FD3FD",
+    color: "#1EC8EB",
     title: "Website",
     type: "Site de prezentare",
     result: "Exemplu demonstrativ",
   },
   {
     channel: "CH 02",
-    color: "#DEDE00",
+    color: "#FFD21F",
     title: "Magazin online",
     type: "E-commerce",
     result: "Exemplu demonstrativ",
   },
   {
     channel: "CH 03",
-    color: "#E52CFC",
+    color: "#EE44C6",
     title: "Reclamă",
     type: "Campanie plătită",
     result: "Exemplu demonstrativ",
   },
   {
     channel: "CH 04",
-    color: "#00E100",
+    color: "#27D24C",
     title: "Identitate",
     type: "Brand",
     result: "Exemplu demonstrativ",
