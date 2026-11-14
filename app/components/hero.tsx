@@ -3,11 +3,13 @@ import { ExploreButton, HeroBeat } from "@/app/components/hero-beat";
 import { whatsappHref } from "@/app/lib/site";
 
 /**
- * Hero beat. The section is 100svh of copy plus 240svh of scroll for the pile:
+ * Hero beat. The section is 100svh of copy plus 282svh of scroll for the pile:
  *   0 to 26%    the pile grows from under the copy to fill the viewport
- *   17 to 45%   the bar screens tune in
- *   36 to 86%   paint pours from the screens and falls to the hole
- *   86 to 100%  everything comes to rest and holds, then the page scrolls on
+ *   17 to 42%   the bar screens tune in; ZGOMOT flashes once the pile is full
+ *   42 to 54%   SEMNAL locks across the pile and the frame holds still
+ *   54 to 95%   the pile bursts, hangs, and comes back together
+ *   81 to 95%   the camera moves down to the lower shot while the sets return
+ *   88 to 95%   everything comes to rest and holds, then the page scrolls on
  * The times live in app/lib/hero-rig.ts. Change the scroll length in the height
  * class below; nothing else depends on it. Heights are in svh, so a phone's
  * address bar sliding away does not move anything.
@@ -15,7 +17,7 @@ import { whatsappHref } from "@/app/lib/site";
  */
 export function Hero() {
   return (
-    <section id="hero" data-scene-stage className="relative h-[340svh] motion-reduce:h-svh">
+    <section id="hero" data-scene-stage className="relative h-[382svh] motion-reduce:h-svh">
       {/* Height of the canvas (the large viewport). Measured, never seen. */}
       <div
         aria-hidden="true"

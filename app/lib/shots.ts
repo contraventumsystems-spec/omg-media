@@ -1,4 +1,4 @@
-import * as THREE from "three"
+import * as THREE from "three";
 
 /**
  * Camera shots for the TV pile.
@@ -14,32 +14,32 @@ import * as THREE from "three"
  */
 export type Shot = {
   /** Point the camera looks at, before truck and pedestal. */
-  target: [number, number, number]
+  target: [number, number, number];
   /** Degrees around the pile. 0 is the faced position; positive orbits to screen-left. */
-  azimuth: number
+  azimuth: number;
   /** Degrees above the horizon. */
-  elevation: number
-  fov: number
+  elevation: number;
+  fov: number;
   /** Width and height in world units that must stay in view. */
-  frame: [number, number]
+  frame: [number, number];
   /** Share of the viewport width and height the frame may take. */
-  fill: [number, number]
+  fill: [number, number];
   /** Slides the pile sideways. In half-viewport widths; positive moves the pile right. */
-  truck?: number
+  truck?: number;
   /** Slides the pile vertically. In half-viewport heights; positive moves the pile down. */
-  pedestal?: number
+  pedestal?: number;
   /**
    * Places one world height at a set screen height instead of using pedestal.
    * `at` runs from -1 at the bottom edge to 1 at the top edge.
    */
-  pin?: { y: number; at: number }
-}
+  pin?: { y: number; at: number };
+};
 
 export type ResolvedShot = {
-  position: THREE.Vector3
-  target: THREE.Vector3
-  fov: number
-}
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+  fov: number;
+};
 
 /** Measured from the export. Screens of the top set sit around y = 12.2. */
 export const PILE = {
@@ -47,9 +47,9 @@ export const PILE = {
   height: 13.6,
   topScreenY: 12.2,
   centre: [3, 5.8, -2.85] as [number, number, number],
-} as const
+} as const;
 
-export const MOBILE_ASPECT = 0.8
+export const MOBILE_ASPECT = 0.8;
 
 /**
  * Mobile is the master set: the pile starts small under the copy, grows to fill
@@ -208,56 +208,64 @@ export const shots = {
       pedestal: 0.06,
     },
   },
-} satisfies Record<"mobile" | "desktop", Record<string, Shot>>
+} satisfies Record<"mobile" | "desktop", Record<string, Shot>>;
 
 /** Extra orbit in the middle of the desktop move, and the slow hold drift after it. */
-export const DESKTOP_SWING_DEG = 15
-export const HOLD_DRIFT_DEG = 3
+export const DESKTOP_SWING_DEG = 15;
+export const HOLD_DRIFT_DEG = 3;
+/** Extra orbit while the pile hangs apart, so the sets slide past each other in depth. */
+export const BURST_SWING_DEG = 9;
+/** The camera backs off by this share of its distance as the pile lets go. */
+export const BURST_RECOIL = 0.07;
 
-const UP = new THREE.Vector3(0, 1, 0)
-const forward = new THREE.Vector3()
-const right = new THREE.Vector3()
-const up = new THREE.Vector3()
+const UP = new THREE.Vector3(0, 1, 0);
+const forward = new THREE.Vector3();
+const right = new THREE.Vector3();
+const up = new THREE.Vector3();
 
-export function resolveShot(shot: Shot, aspect: number, out?: ResolvedShot): ResolvedShot {
+export function resolveShot(
+  shot: Shot,
+  aspect: number,
+  out?: ResolvedShot,
+): ResolvedShot {
   const result = out ?? {
     position: new THREE.Vector3(),
     target: new THREE.Vector3(),
     fov: shot.fov,
-  }
-  const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2)
-  const tanH = tanV * aspect
+  };
+  const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2);
+  const tanH = tanV * aspect;
   const distance = Math.max(
     shot.frame[0] / 2 / tanH / shot.fill[0],
     shot.frame[1] / 2 / tanV / shot.fill[1],
-  )
-  const az = THREE.MathUtils.degToRad(shot.azimuth)
-  const el = THREE.MathUtils.degToRad(shot.elevation)
+  );
+  const az = THREE.MathUtils.degToRad(shot.azimuth);
+  const el = THREE.MathUtils.degToRad(shot.elevation);
 
-  result.target.set(...shot.target)
+  result.target.set(...shot.target);
   result.position
     .set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az))
     .multiplyScalar(distance)
-    .add(result.target)
+    .add(result.target);
 
-  forward.subVectors(result.target, result.position).normalize()
-  right.crossVectors(forward, UP).normalize()
-  up.crossVectors(right, forward)
+  forward.subVectors(result.target, result.position).normalize();
+  right.crossVectors(forward, UP).normalize();
+  up.crossVectors(right, forward);
 
-  const halfW = distance * tanH
-  const halfH = distance * tanV
-  let rise = (shot.pedestal ?? 0) * halfH
+  const halfW = distance * tanH;
+  const halfH = distance * tanV;
+  let rise = (shot.pedestal ?? 0) * halfH;
   if (shot.pin) {
     // Height of the pinned point above the look-at point, as the camera sees it.
-    const seen = (shot.pin.y - shot.target[1]) * Math.cos(el)
-    rise = seen - shot.pin.at * halfH
+    const seen = (shot.pin.y - shot.target[1]) * Math.cos(el);
+    rise = seen - shot.pin.at * halfH;
   }
-  const slide = -(shot.truck ?? 0) * halfW
+  const slide = -(shot.truck ?? 0) * halfW;
 
-  result.position.addScaledVector(right, slide).addScaledVector(up, rise)
-  result.target.addScaledVector(right, slide).addScaledVector(up, rise)
-  result.fov = shot.fov
-  return result
+  result.position.addScaledVector(right, slide).addScaledVector(up, rise);
+  result.target.addScaledVector(right, slide).addScaledVector(up, rise);
+  result.fov = shot.fov;
+  return result;
 }
 
 /**
@@ -267,9 +275,12 @@ export function resolveShot(shot: Shot, aspect: number, out?: ResolvedShot): Res
  * 360 px phone and on a tall one without a single pixel offset in the layout.
  * Returns null when the band is too short to hold a readable pile.
  */
-export function fitShot(base: Shot, band: { top: number; bottom: number }): Shot | null {
-  const height = band.bottom - band.top
-  if (height < 0.17) return null
+export function fitShot(
+  base: Shot,
+  band: { top: number; bottom: number },
+): Shot | null {
+  const height = band.bottom - band.top;
+  if (height < 0.17) return null;
   return {
     target: PILE.centre,
     azimuth: 0,
@@ -277,10 +288,10 @@ export function fitShot(base: Shot, band: { top: number; bottom: number }): Shot
     fov: base.fov,
     /* The pile alone, seen from just above: its height plus a little of its depth. */
     frame: [PILE.width, 16.2],
-    fill: [0.8, height],
+    fill: [15.8, height],
     /* Centre of the band, as an offset from the centre of the canvas. Positive is down. */
     pedestal: band.top + band.bottom - 1,
-  }
+  };
 }
 
 /**
@@ -290,19 +301,19 @@ export function fitShot(base: Shot, band: { top: number; bottom: number }): Shot
  */
 export type HolePlacement = {
   /** Height in the viewport: 0 is the centre, -1 the bottom edge. */
-  at: number
+  at: number;
   /** Distance from the camera, in multiples of the pile's distance. Above 1 is behind it. */
-  depth: number
+  depth: number;
   /** Radius, as a share of half the viewport width at that depth. */
-  radius: number
+  radius: number;
   /** Sideways position: 0 is the centre, 1 the right edge. */
-  across?: number
-}
+  across?: number;
+};
 
 export const HOLE: Record<"mobile" | "desktop", HolePlacement> = {
   mobile: { at: -0.46, depth: 1.6, radius: 0.44 },
   desktop: { at: -0.6, depth: 1.6, radius: 0.17 },
-}
+};
 
 export function placeHole(
   shot: ResolvedShot,
@@ -310,27 +321,31 @@ export function placeHole(
   placement: HolePlacement,
   out: { centre: THREE.Vector3; radius: number },
 ) {
-  const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2)
-  const depth = shot.position.distanceTo(shot.target) * placement.depth
-  forward.subVectors(shot.target, shot.position).normalize()
-  right.crossVectors(forward, UP).normalize()
-  up.crossVectors(right, forward)
+  const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2);
+  const depth = shot.position.distanceTo(shot.target) * placement.depth;
+  forward.subVectors(shot.target, shot.position).normalize();
+  right.crossVectors(forward, UP).normalize();
+  up.crossVectors(right, forward);
   out.centre
     .copy(shot.position)
     .addScaledVector(forward, depth)
     .addScaledVector(up, placement.at * depth * tanV)
-    .addScaledVector(right, (placement.across ?? 0) * depth * tanV * aspect)
-  out.radius = placement.radius * depth * tanV * aspect
-  return out
+    .addScaledVector(right, (placement.across ?? 0) * depth * tanV * aspect);
+  out.radius = placement.radius * depth * tanV * aspect;
+  return out;
 }
 
 /** Beat 2 shots look at the hole, so they are completed once it has been placed. */
-export function riverShot(base: Shot, centre: THREE.Vector3, radius: number): Shot {
+export function riverShot(
+  base: Shot,
+  centre: THREE.Vector3,
+  radius: number,
+): Shot {
   return {
     ...base,
     target: [centre.x, centre.y + radius * 0.5, centre.z],
     frame: [radius * 3, radius * 3.2],
-  }
+  };
 }
 
 /**
@@ -343,19 +358,19 @@ export function stillFrame(
   layout: "mobile" | "desktop",
   band: { top: number; bottom: number } | null,
 ): { shot: Shot; hole: HolePlacement } {
-  const base: Shot = shots[layout].SHOT_C
-  const hole = HOLE[layout]
+  const base: Shot = shots[layout].SHOT_C;
+  const hole = HOLE[layout];
   /* Pile top to hole bottom takes about this share of the canvas height in the cascade shot. */
-  const span = 0.7
-  let scale = 1
-  let lift = 0
-  let truck = 0
+  const span = 0.7;
+  let scale = 1;
+  let lift = 0;
+  let truck = 0;
   if (layout === "desktop") {
-    scale = 0.74
-    truck = 0.44
+    scale = 0.74;
+    truck = 0.44;
   } else if (band) {
-    scale = Math.min(1, (band.bottom - band.top) / span)
-    lift = 1 - (band.top + band.bottom)
+    scale = Math.min(1, (band.bottom - band.top) / span);
+    lift = 1 - (band.top + band.bottom);
   }
   return {
     shot: {
@@ -370,5 +385,5 @@ export function stillFrame(
       radius: hole.radius * scale,
       across: truck,
     },
-  }
+  };
 }

@@ -1,30 +1,159 @@
 import * as THREE from "three"
-import { BAR_HEX, HALFTONE_HEX, LIQUID_HEX, PAGE_HEX, PAPER_HEX } from "@/app/lib/bars"
+import { BAR_HEX, HALFTONE_HEX, PAGE_HEX, PAPER_HEX } from "@/app/lib/bars"
 
 /**
- * The custom materials of the scene: static screens, bar screens, the paint
- * streams, the hole and the halftone. No lights and no textures. Colours go in
- * as linear THREE.Color uniforms and leave through colorspace_fragment, so the
- * bars match the CSS tokens exactly.
+ * The custom materials of the scene: static screens, bar screens, the halftone
+ * and the faint word behind the pile. No lights. The bar screens sample one
+ * mask; every colour goes in as a linear THREE.Color and leaves through
+ * colorspace_fragment, so the bars and the paper word match the CSS tokens.
  */
 
 const barColors = () => BAR_HEX.map((hex) => new THREE.Color(hex))
-const liquidColors = () => LIQUID_HEX.map((hex) => new THREE.Color(hex))
 
 /** Shared by every material, so one write per frame moves all of them. */
 export const sharedUniforms = {
   uTime: { value: 0 },
   uBars: { value: barColors() },
-  uLiquid: { value: liquidColors() },
   /* Static is warm paper white, not video white, so the whole pile sits in one ink. */
   uPaper: { value: new THREE.Color(PAPER_HEX) },
+}
+
+/** Black until the hero paints the word mask. A sampler cannot be empty. */
+function blankWord() {
+  const texture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1)
+  texture.colorSpace = THREE.NoColorSpace
+  texture.needsUpdate = true
+  return texture
+}
+
+/**
+ * The hero words, shared by every bar screen and the gap copy.
+ * uLockView is the SHOT_1 camera with no drift, no pointer and no orbit.
+ * Red is ZGOMOT, green is SEMNAL.
+ */
+export const wordUniforms = {
+  uWord: { value: blankWord() as THREE.Texture },
+  uLockView: { value: new THREE.Matrix4() },
+  uZgomot: { value: 0 },
+  uSemnal: { value: 0 },
+  uTear: { value: 0 },
+  uGhost: { value: 0 },
+  /* Lock-frame box the bridging copy may occupy. Outside it the wall stays bare. */
+  uSpan: { value: new THREE.Vector4(0, 0, 1, 1) },
+}
+
+/**
+ * The letters of the resting pile, shared by every screen. uLetters is the glyph
+ * atlas of app/lib/rest-letters.ts; uText is 1 while the page sits at the top
+ * and falls to 0 as the first scroll hands the tubes over to the tune-in.
+ */
+export const letterUniforms = {
+  uLetters: { value: blankWord() as THREE.Texture },
+  uText: { value: 0 },
+}
+
+/**
+ * The face on the top tube, written every frame from app/lib/tv-face.ts.
+ * uFaceShape is the eye shape and the mouth shape; uFaceMove is where the eyes
+ * look (x, y), the idle hop, and 1 during a blink.
+ */
+export const faceUniforms = {
+  uFaceShape: { value: new THREE.Vector2(0, 0) },
+  uFaceMove: { value: new THREE.Vector4(0, 0, 0, 0) },
+}
+
+/** What one screen needs to show its letter. */
+function letterSlot() {
+  return {
+    /* 1 on the tube that shows the face instead of a glyph. */
+    uFace: { value: 0 },
+    /* Rest-pose glass as the camera faces it: left edge (max z), bottom, width, height. */
+    uGlass: { value: new THREE.Vector4(0, 0, 1, 1) },
+    /* Atlas cell, or -1 for a tube that keeps its static. */
+    uGlyph: { value: -1 },
+    /* 1 for the instant a tube changes letter: it shows static instead. */
+    uFlick: { value: 0 },
+    /* 1 on O, M and G once they are lit: the picture stays bright under the letter. */
+    uSpot: { value: 0 },
+  }
 }
 
 const COMMON = /* glsl */ `
   uniform float uTime;
   uniform vec3 uBars[7];
-  uniform vec3 uLiquid[7];
   uniform vec3 uPaper;
+  uniform sampler2D uLetters;
+  uniform float uText;
+  uniform vec4 uGlass;
+  uniform float uGlyph;
+  uniform float uFlick;
+  uniform float uSpot;
+  uniform float uFace;
+  uniform vec2 uFaceShape;
+  uniform vec4 uFaceMove;
+
+  /* One eye, p from its centre. Shapes: dot, tall, happy arc, shut, wide with a pupil. */
+  float eyeInk(vec2 p, float shape) {
+    if (shape < 0.5) return step(length(p), 0.1);
+    if (shape < 1.5) return step(length(p * vec2(1.0, 0.57)), 0.08);
+    if (shape < 2.5) return step(abs(length(p + vec2(0.0, 0.05)) - 0.1), 0.045) * step(-0.05, p.y);
+    if (shape < 3.5) return step(abs(p.y), 0.04) * step(abs(p.x), 0.12);
+    return max(step(abs(length(p) - 0.11), 0.04), step(length(p - uFaceMove.xy), 0.045));
+  }
+
+  /* The mouth, p from its centre. Shapes: smile, round, flat, open grin. */
+  float mouthInk(vec2 p, float shape) {
+    if (shape < 0.5) return step(abs(length(p - vec2(0.0, 0.08)) - 0.15), 0.04) * step(p.y, 0.0);
+    if (shape < 1.5) return step(length(p * vec2(1.0, 0.8)), 0.07);
+    if (shape < 2.5) return step(abs(p.y), 0.035) * step(abs(p.x), 0.11);
+    return step(length(p - vec2(0.0, 0.06)), 0.15) * step(p.y, 0.06);
+  }
+
+  /* The pet face: eyes and a mouth, snapped to a 20 by 20 grid so it reads as LCD pixels. */
+  float faceInk(vec2 cell) {
+    float inside = step(0.0, cell.x) * step(cell.x, 1.0) * step(0.0, cell.y) * step(cell.y, 1.0);
+    vec2 q = (floor(cell * 20.0) + 0.5) / 20.0 - vec2(0.0, uFaceMove.z);
+    float shape = mix(uFaceShape.x, 3.0, uFaceMove.w);
+    vec2 look = uFaceMove.xy;
+    float eyes = max(
+      eyeInk(q - vec2(0.28, 0.62) - look, shape),
+      eyeInk(q - vec2(0.72, 0.62) - look, shape)
+    );
+    return max(eyes, mouthInk(q - vec2(0.5, 0.27), uFaceShape.y)) * inside;
+  }
+
+  /* Coverage of this tube's glyph at a point of its cell, 0 outside the cell. */
+  float glyphInk(vec2 cell) {
+    float inside = step(0.0, cell.x) * step(cell.x, 1.0) * step(0.0, cell.y) * step(cell.y, 1.0);
+    vec2 at = vec2(mod(uGlyph, 4.0), 3.0 - floor(uGlyph / 4.0));
+    return texture2D(uLetters, (at + clamp(cell, 0.0, 1.0)) / 4.0).r * inside;
+  }
+
+  /*
+   * The resting letter: paper-white ink on a tube turned almost dark. world is
+   * the rest position, so the letter is placed on the glass as the pile stands;
+   * screen-right is -Z. The cell is square and 0.74 of the glass height.
+   */
+  vec3 restLetter(vec3 color, vec3 world) {
+    float on = uText * step(0.0, uGlyph) * (1.0 - uFlick);
+    if (on <= 0.0) return color;
+    vec2 p = vec2(uGlass.x - world.z - 0.5 * uGlass.z, world.y - uGlass.y - 0.5 * uGlass.w);
+    vec2 cell = p / (0.74 * uGlass.w) + 0.5;
+    /* The face has more to show than a letter, so its cell is 0.92 of the glass height. */
+    float ink = uFace > 0.5 ? faceInk(p / (0.92 * uGlass.w) + 0.5) : glyphInk(cell);
+    vec3 lettered = mix(color * 0.16, uPaper, ink);
+    if (uSpot > 0.0) {
+      /* A lit tube keeps its bars. A dark rim holds the letter off the pale ones. */
+      float rim = ink;
+      for (int i = 0; i < 8; i++) {
+        float angle = float(i) * 0.7854;
+        rim = max(rim, glyphInk(cell + 0.045 * vec2(cos(angle), sin(angle))));
+      }
+      vec3 lit = mix(mix(color, vec3(0.012), rim), uPaper, ink);
+      lettered = mix(lettered, lit, uSpot);
+    }
+    return mix(color, lettered, on);
+  }
 
   float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -44,22 +173,6 @@ const COMMON = /* glsl */ `
   vec3 barColor(float x) {
     int index = int(clamp(floor(x * 7.0), 0.0, 6.0));
     return uBars[index];
-  }
-
-  /*
-   * The paint. A cyclic run through the seven colours: each holds for half its
-   * band and blends into the next over the other half, so a colour never snaps.
-   */
-  vec3 liquid(float hue) {
-    float x = fract(hue) * 7.0;
-    int index = int(min(floor(x), 6.0));
-    int next = index == 6 ? 0 : index + 1;
-    return mix(uLiquid[index], uLiquid[next], smoothstep(0.3, 1.0, fract(x)));
-  }
-
-  /* Across a screen the paint keeps the bar order, so bars can turn to paint in place. */
-  float stripeHue(float stripe) {
-    return stripe * 0.93;
   }
 
   /* CRT feel shared by both screen types. uv is 0..1 across the glass. */
@@ -115,6 +228,23 @@ const VERTEX = /* glsl */ `
   }
 `
 
+/*
+ * Bar screens are cut and mapped by world height, measured with the pile stacked.
+ * When a set flies off in the burst its glass must keep that picture, so the
+ * height comes from the matrix the mesh had at rest, not from where it is now.
+ */
+const MELT_VERTEX = /* glsl */ `
+  uniform mat4 uRest;
+  varying vec2 vUv;
+  varying vec3 vWorld;
+
+  void main() {
+    vUv = uv;
+    vWorld = (uRest * vec4(position, 1.0)).xyz;
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+  }
+`
+
 /* ------------------------------------------------------------------ screens */
 
 /** 0 off, 1 static, 2 bars. Video is state 3 and waits for the atlas. */
@@ -132,7 +262,13 @@ const SCREEN_FRAGMENT = /* glsl */ `
   uniform float uVignette;
   uniform float uFlicker;
   uniform float uDim;
+  uniform sampler2D uWord;
+  uniform mat4 uLockView;
+  uniform float uZgomot;
+  uniform float uSemnal;
+  uniform float uTear;
   varying vec2 vUv;
+  varying vec3 vWorld;
 
   void main() {
     /* The static quads only use the middle of their UV square, and it lies on its side. */
@@ -147,8 +283,27 @@ const SCREEN_FRAGMENT = /* glsl */ `
     vec3 color = vec3(0.0);
     if (uState > 0.5) {
       float progress = uState > 1.5 ? max(uProgress, 0.0001) : 0.0;
+      /*
+       * The picture is laid out on the glass as the pile stands, from the rest
+       * position: the mesh UVs lie on their side, which would turn the bars over.
+       */
+      vec2 face = vec2((uGlass.x - vWorld.z) / uGlass.z, (vWorld.y - uGlass.y) / uGlass.w);
+      uv = mix(uv, clamp(face, 0.0, 0.999), step(1.5, uState));
       color = tuneIn(uv, progress, uSeed, uTint, uTintMix);
-      color = crt(color, uv, uSeed, uScanline, uVignette, uFlicker);
+      color = restLetter(color, vWorld);
+      /* Same lock-camera picture as the bar screens, from the rest position. */
+      vec4 clip = uLockView * vec4(vWorld, 1.0);
+      vec2 word = clip.xy / clip.w * 0.5 + 0.5;
+      float line = floor(word.y * 40.0);
+      float tear = hash21(vec2(line, floor(uTime * 18.0) + uSeed)) - 0.5;
+      float tearBand = smoothstep(0.1, 0.0, abs(fract(word.y + uTime * 0.9 + uSeed) - 0.5));
+      word.x += tear * (0.22 * tearBand + 0.05) * uTear;
+      float framed = step(0.0, word.x) * step(word.x, 1.0) * step(0.0, word.y) * step(word.y, 1.0);
+      vec2 mask = texture2D(uWord, word).rg * framed;
+      float cover = max(mask.r * uZgomot, mask.g * uSemnal);
+      color = mix(color, color * 0.38, uSemnal);
+      color = mix(color, uPaper, cover);
+      color = crt(color, uv, uSeed, uScanline, uVignette, uFlicker * (1.0 - uSemnal));
     }
 
     gl_FragColor = vec4(color * inside * uDim, 1.0);
@@ -156,15 +311,19 @@ const SCREEN_FRAGMENT = /* glsl */ `
   }
 `
 
-export function createScreenMaterial(seed: number) {
+export function createScreenMaterial(seed: number, rest: THREE.Matrix4) {
   return new THREE.ShaderMaterial({
     name: "Screen",
-    vertexShader: VERTEX,
+    vertexShader: MELT_VERTEX,
     fragmentShader: SCREEN_FRAGMENT,
     side: THREE.DoubleSide,
     toneMapped: false,
     uniforms: {
       ...sharedUniforms,
+      ...wordUniforms,
+      ...letterUniforms,
+      ...faceUniforms,
+      ...letterSlot(),
       uState: { value: 1 },
       uProgress: { value: 0 },
       uSeed: { value: seed },
@@ -175,6 +334,7 @@ export function createScreenMaterial(seed: number) {
       uVignette: { value: 0.35 },
       uFlicker: { value: 0.03 },
       uDim: { value: 1 },
+      uRest: { value: rest.clone() },
     },
   })
 }
@@ -183,17 +343,13 @@ export function createScreenMaterial(seed: number) {
 
 /**
  * A bar screen. The model keeps the glass, a drip and a share of a floor pool in
- * one mesh. The glass is the picture; everything below it is the modeled paint,
- * which stays as it was made. The paint that moves is its own geometry
- * (createStreamMaterial), so it can gather, fall and land on the timeline.
- *
- * uTune takes the glass from static to locked bars. uMelt then turns the bars to
- * paint in place: same order across the screen, soft edges that sag and wander.
+ * one mesh. Only the glass is drawn here: everything below it is the puddle, and
+ * the paint material draws that on a copy of the mesh. uTune takes that glass from static to locked bars. The word is
+ * sampled from the stacked rest position, so a flying set keeps its patch.
  */
 const MELT_FRAGMENT = /* glsl */ `
   ${COMMON}
   uniform float uTune;
-  uniform float uMelt;
   uniform float uSeed;
   uniform float uTop;
   uniform float uScreenBottom;
@@ -201,6 +357,11 @@ const MELT_FRAGMENT = /* glsl */ `
   uniform float uTintMix;
   uniform float uDim;
   uniform float uCrt;
+  uniform sampler2D uWord;
+  uniform mat4 uLockView;
+  uniform float uZgomot;
+  uniform float uSemnal;
+  uniform float uTear;
   varying vec2 vUv;
   varying vec3 vWorld;
 
@@ -208,37 +369,31 @@ const MELT_FRAGMENT = /* glsl */ `
     /* The stripe texture had eight columns; the eighth was black. */
     float stripe = clamp(vUv.x / 0.875, 0.0, 0.999);
 
-    /*
-     * Below the glass the mesh is the modeled paint: the drip and the pool. It is
-     * drawn from the first frame, in the same bands as the stream that joins it.
-     */
-    if (vWorld.y < uScreenBottom) {
-      vec3 wet = mix(liquid(stripeHue(stripe)), uTint, uTintMix);
-      vec3 surface = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
-      vec3 eye = normalize(cameraPosition - vWorld);
-      if (dot(surface, eye) < 0.0) surface = -surface;
-      float shine = max(dot(surface, normalize(normalize(vec3(0.55, 0.8, 0.25)) + eye)), 0.0);
-      wet += (0.5 * pow(shine, 36.0) + 0.1 * pow(shine, 6.0)) * uPaper;
-      gl_FragColor = vec4(wet * uDim, 1.0);
-      #include <colorspace_fragment>
-      return;
-    }
+    /* Below the glass the mesh is the modeled drip and floor pool. The paint material draws it. */
+    if (vWorld.y < uScreenBottom) discard;
 
     vec2 uv = vec2(stripe, (vWorld.y - uScreenBottom) / max(uTop - uScreenBottom, 0.001));
     vec3 color = tuneIn(uv, uTune, uSeed, uTint, uTintMix);
+    color = restLetter(color, vWorld);
 
-    if (uMelt > 0.0) {
-      /* The edges between colours go slack from the top down, like paint that has started to run. */
-      float slack = uMelt * (1.0 - uv.y * 0.55);
-      float wander = sin(uv.y * 7.0 - uTime * 0.7 + uSeed * 5.0) * 0.022
-        + sin(uv.y * 15.0 + uTime * 0.45 + uSeed * 9.0) * 0.009;
-      vec3 paint = liquid(stripeHue(clamp(stripe + wander * slack, 0.0, 0.999)));
-      /* One soft band of light across the tube: the picture is wet now. */
-      paint += 0.12 * smoothstep(0.16, 0.0, abs(uv.y - 0.74 - 0.05 * sin(stripe * 6.0 + uSeed)));
-      color = mix(color, mix(paint, uTint, uTintMix), smoothstep(0.0, 1.0, uMelt));
-    }
+    /* One picture for the whole pile, in the locked camera. Rest position glues it to the glass. */
+    vec4 clip = uLockView * vec4(vWorld, 1.0);
+    vec2 word = clip.xy / clip.w * 0.5 + 0.5;
+    float line = floor(word.y * 40.0);
+    float tear = hash21(vec2(line, floor(uTime * 18.0) + uSeed)) - 0.5;
+    float tearBand = smoothstep(0.1, 0.0, abs(fract(word.y + uTime * 0.9 + uSeed) - 0.5));
+    word.x += tear * (0.22 * tearBand + 0.05) * uTear;
+    float framed = step(0.0, word.x) * step(word.x, 1.0) * step(0.0, word.y) * step(word.y, 1.0);
+    vec2 mask = texture2D(uWord, word).rg * framed;
 
-    color = crt(color, uv, uSeed, 0.25 * uCrt * (1.0 - 0.6 * uMelt), 0.3 * uCrt, 0.03) * uDim;
+    /* The same sync roll as tuneIn, so the flash is cut by the bar and the lock is not. */
+    float sync = smoothstep(0.6, 1.0, uTune);
+    float rollY = fract(uv.y - sync * 1.2);
+    float rollBar = smoothstep(0.06, 0.0, abs(rollY - 0.5)) * (1.0 - sync) * step(0.6, uTune);
+    float cover = max(mask.r * uZgomot, mask.g * uSemnal) * (1.0 - rollBar);
+    color = mix(color, color * 0.38, uSemnal);
+    color = mix(color, uPaper, cover);
+    color = crt(color, uv, uSeed, 0.25 * uCrt, 0.3 * uCrt, 0.03 * (1.0 - uSemnal)) * uDim;
     gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
   }
@@ -248,29 +403,28 @@ export type MeltShape = {
   seed: number
   top: number
   screenBottom: number
+  /** World matrix of the mesh with the pile stacked. */
+  rest: THREE.Matrix4
 }
 
 export function createMeltMaterial(shape: MeltShape) {
   return new THREE.ShaderMaterial({
     name: "BarScreen",
-    vertexShader: VERTEX,
+    vertexShader: MELT_VERTEX,
     fragmentShader: MELT_FRAGMENT,
     side: THREE.DoubleSide,
     toneMapped: false,
-    /*
-     * The modeled paint is tested against depth but does not write it, and is
-     * drawn after the cabinets (see renderOrder in the scene). A stream drawn
-     * after it is then always in front of the floor puddle, whichever side of
-     * the puddle's surface it is on, so it never appears to cut through it.
-     */
-    depthWrite: false,
     uniforms: {
       ...sharedUniforms,
+      ...wordUniforms,
+      ...letterUniforms,
+      ...faceUniforms,
+      ...letterSlot(),
       uTune: { value: 0 },
-      uMelt: { value: 0 },
       uSeed: { value: shape.seed },
       uTop: { value: shape.top },
       uScreenBottom: { value: shape.screenBottom },
+      uRest: { value: shape.rest.clone() },
       uTint: { value: new THREE.Color("#ffffff") },
       uTintMix: { value: 0 },
       uDim: { value: 1 },
@@ -280,304 +434,111 @@ export function createMeltMaterial(shape: MeltShape) {
   })
 }
 
-/* ------------------------------------------------------------------- stream */
+/* -------------------------------------------------------------------- paint */
 
 /**
- * One stream of paint. The geometry is a tube of rings along a fixed path; every
- * vertex carries its ring centre (position), the two axes of its ring and how far
- * along the path it sits. The vertex shader rebuilds the surface each frame from
- * the timeline values, so the same mesh is a film on the glass, a hanging drop,
- * a falling thread and a full ribbon.
- *
- *   uHead     leading edge, in world units along the path
- *   uSwell    size of the drop at the leading edge
- *   uStretch  how long the fall has pulled that drop
- *   uBody     thickness of the strand behind it
- *   uSway     sideways swing between the cabinet and the hole
- *   uPhase    how far the colour bands and beads have travelled, in world units
+ * The modeled paint: the part of a bar-screen mesh below its glass, and the
+ * meshes that are floor pool only. Flat bar colours, no picture. It is drawn on
+ * a copy that stays on the floor, so the pool does not leave with a flying set.
+ * uDripY cuts a drip off below a height; uPool is the spreading edge of the pool.
+ * uFade takes the pool out while the sets are in the air and brings it back when they land.
  */
-const STREAM_VERTEX = /* glsl */ `
-  attribute vec3 aSide;
-  attribute vec3 aOut;
-  attribute vec2 aRing;
-  attribute float aArc;
-  attribute vec2 aBase;
-
-  uniform float uTime;
-  uniform float uLength;
-  uniform float uLip;
-  uniform float uHead;
-  uniform float uSwell;
-  uniform float uStretch;
-  uniform float uBody;
-  uniform float uSway;
-  uniform float uBreath;
-  uniform float uPhase;
-  uniform float uDrop;
-  uniform float uSeed;
-  uniform float uScale;
-
+const PAINT_FRAGMENT = /* glsl */ `
+  uniform vec3 uBars[7];
+  uniform float uScreenBottom;
+  uniform float uDripY;
+  uniform vec3 uPool;
+  uniform float uFade;
+  varying vec2 vUv;
   varying vec3 vWorld;
-  varying vec3 vNormal;
-  varying float vArc;
-  varying float vAcross;
-  varying float vFree;
 
   void main() {
-    float arc = aArc;
-    float head = uHead;
-    float lip = uLip;
-    float behind = head - arc;
-    /* 0 on the glass and the cabinet, 1 once the paint hangs free. */
-    float free = smoothstep(lip, lip + 1.4, arc);
-
-    /* Just behind the drop the strand is pulled to a thread; further up it has had time to fill. */
-    float neck = 1.0 - 0.6 * exp(-max(behind, 0.0) / (1.0 + 2.5 * uStretch));
-    float thick = mix(1.0, mix(0.4, 1.0, uBody) * neck, free);
-
-    /* Beads: slow swellings that ride down the strand with the paint. */
-    float bead = smoothstep(0.5, 1.0, sin((arc - uPhase) * 1.25 + uSeed * 9.0));
-    thick *= 1.0 + 0.26 * bead * free;
-
-    /* The front of the paint is round, with or without a drop on it. */
-    float front = sqrt(clamp(behind / 0.3, 0.0, 1.0));
-    float halfWidth = aBase.x * thick * front;
-    float halfDepth = aBase.y * thick * front;
-
-    /* The drop: a ball at the leading edge with a long soft shoulder behind it. */
-    float radius = uDrop * uSwell;
-    float reach = max(radius * (1.0 + 1.5 * uStretch), 0.0001);
-    float offset = arc - (head - reach);
-    float ball = sqrt(max(0.0, 1.0 - (offset * offset) / (reach * reach)));
-    float shoulder = exp(-(offset * offset) / (reach * reach * (2.5 + 5.0 * uStretch)));
-    float drop = radius * (offset > 0.0 ? ball : shoulder) / (1.0 + 0.35 * uStretch);
-    halfWidth = max(halfWidth, drop);
-    halfDepth = max(halfDepth, drop * (0.3 + 0.7 * free));
-
-    float alive = step(0.0, behind) * uScale;
-    halfWidth *= alive;
-    halfDepth *= alive;
-
-    /* Swing: pinned at the cabinet and at the hole, widest in between. */
-    float span = clamp((arc - lip) / max(uLength - lip, 0.0001), 0.0, 1.0);
-    float bow = sin(3.14159 * span);
-    float swing = uSway * 0.85 * bow * (1.0 + 0.35 * sin(span * 9.0 + uSeed * 3.0));
-    swing += uBreath * 0.07 * bow * sin(uTime * 0.55 + span * 6.0 + uSeed * 7.0);
-
-    vec3 centre = position + aSide * swing;
-    vec3 world = centre + aSide * aRing.x * halfWidth + aOut * aRing.y * halfDepth;
-
-    vWorld = world;
-    vNormal = aSide * aRing.x * (halfDepth + 0.0001) + aOut * aRing.y * (halfWidth + 0.0001);
-    vArc = arc;
-    vAcross = aRing.x;
-    vFree = free;
-    gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
-  }
-`
-
-const STREAM_FRAGMENT = /* glsl */ `
-  ${COMMON}
-  uniform float uLip;
-  uniform float uPhase;
-  uniform float uSeed;
-  uniform vec2 uStripe;
-  uniform vec3 uTint;
-  uniform float uTintMix;
-  uniform float uDim;
-  uniform float uGloss;
-  uniform vec3 uHole;
-  uniform float uHoleRadius;
-  uniform vec3 uPage;
-  uniform float uFar;
-
-  varying vec3 vWorld;
-  varying vec3 vNormal;
-  varying float vArc;
-  varying float vAcross;
-  varying float vFree;
-
-  void main() {
-    vec3 normal = normalize(vNormal);
-    vec3 view = normalize(cameraPosition - vWorld);
-    float facing = clamp(dot(normal, view), 0.0, 1.0);
-
-    /*
-     * The colours run side by side across the stream, in the bar order, from the
-     * glass to the hole: the bands narrow with the paint and never change places.
-     * Once it hangs free their edges wander a little, and the wander travels with it.
-     */
-    float wander = 0.035 * sin((vArc - uPhase) * 0.45 + uSeed * 9.0)
-      + 0.015 * sin((vArc - uPhase) * 1.3 + uSeed * 4.0);
-    float stripe = clamp(uStripe.x + uStripe.y * vAcross + wander * vFree, 0.0, 0.999);
-    float hue = stripeHue(stripe);
-    vec3 paint = mix(liquid(hue), uTint, uTintMix) * uDim;
-
-    /*
-     * Volume grows with the paint. On the glass it is a film with no edge of its
-     * own, so it reads as the picture itself; in free fall it is a round strand.
-     */
-    float volume = 0.15 + 0.85 * vFree;
-
-    /* Thickness: the paint is darker where the surface turns away, with an ink line at the edge. */
-    vec3 color = paint * mix(1.0, mix(0.5, 1.0, pow(facing, 0.7)), volume);
-    /* A little of the next colour in the turn of the surface, as if the stream beside it showed in it. */
-    color = mix(color, liquid(hue + 0.16) * uDim, 0.22 * pow(1.0 - facing, 2.0) * uGloss * volume);
-    color *= mix(1.0, mix(0.3, 1.0, smoothstep(0.0, 0.3, facing)), volume);
-
-    /* Wet: one small hard light and a wide soft one, from above and in front. */
-    vec3 light = normalize(vec3(0.55, 0.8, 0.25));
-    float glint = max(dot(normal, normalize(light + view)), 0.0);
-    color += uGloss * uDim * volume * (0.85 * pow(glint, 36.0) + 0.2 * pow(glint, 6.0)) * uPaper;
-    /* One long streak down the ribbon, off centre: thick paint holds a line of light as it falls. */
-    float streak = smoothstep(0.13, 0.0, abs(vAcross + 0.3)) * smoothstep(0.3, 0.8, facing);
-    color += 0.22 * uGloss * uDim * vFree * streak * uPaper;
-
-    /* Depth: far paint sinks a little into the page, and it goes black as it drops into the hole. */
-    float distanceToEye = distance(cameraPosition, vWorld);
-    color = mix(color, uPage, 0.3 * smoothstep(uFar * 0.55, uFar * 1.15, distanceToEye));
-    color *= 1.0 - smoothstep(0.0, uHoleRadius * 1.15, uHole.y - vWorld.y);
-
-    gl_FragColor = vec4(color, 1.0);
+    if (uFade < 0.01) discard;
+    if (vWorld.y >= uScreenBottom || vWorld.y < uDripY) discard;
+    /* The pool spreads from one point under the pile. The edge wanders, so it is not a circle. */
+    vec2 p = vWorld.xz - uPool.xy;
+    float angle = atan(p.y, p.x);
+    float reach = length(p) + 0.9 * sin(angle * 6.0) + 0.5 * sin(angle * 13.0 + 1.7);
+    if (reach > uPool.z) discard;
+    /* The stripe texture had eight columns; the eighth was black. */
+    float stripe = clamp(vUv.x / 0.875, 0.0, 0.999);
+    gl_FragColor = vec4(uBars[int(floor(stripe * 7.0))], uFade);
     #include <colorspace_fragment>
   }
 `
 
-export type StreamShape = {
-  seed: number
-  /** Path length in world units. */
-  length: number
-  /** Distance along the path at which the paint leaves the cabinet. */
-  lip: number
-  /** Radius of the drop at full swell, in world units. */
-  drop: number
-  /** Bar position at the centre of the stream, and its change towards the +side edge. */
-  stripe: [number, number]
-}
-
-export function createStreamMaterial(shape: StreamShape) {
+export function createPaintMaterial(screenBottom: number, rest: THREE.Matrix4) {
   return new THREE.ShaderMaterial({
-    name: "Stream",
-    vertexShader: STREAM_VERTEX,
-    fragmentShader: STREAM_FRAGMENT,
+    name: "Paint",
+    vertexShader: MELT_VERTEX,
+    fragmentShader: PAINT_FRAGMENT,
     side: THREE.DoubleSide,
     toneMapped: false,
+    transparent: true,
     uniforms: {
-      ...sharedUniforms,
-      uLength: { value: shape.length },
-      uLip: { value: shape.lip },
-      uHead: { value: 0 },
-      uSwell: { value: 0 },
-      uStretch: { value: 0 },
-      uBody: { value: 0.3 },
-      uSway: { value: 0 },
-      uBreath: { value: 0 },
-      uPhase: { value: 0 },
-      uDrop: { value: shape.drop },
-      uSeed: { value: shape.seed },
-      uScale: { value: 1 },
-      uStripe: { value: new THREE.Vector2(...shape.stripe) },
-      uTint: { value: new THREE.Color("#ffffff") },
-      uTintMix: { value: 0 },
-      uDim: { value: 1 },
-      uGloss: { value: 1 },
-      uHole: { value: new THREE.Vector3() },
-      uHoleRadius: { value: 1 },
-      uPage: { value: new THREE.Color(PAGE_HEX) },
-      uFar: { value: 100 },
+      uBars: sharedUniforms.uBars,
+      uScreenBottom: { value: screenBottom },
+      uRest: { value: rest.clone() },
+      /* Nothing is cut and nothing is held back until the scene says so. */
+      uDripY: { value: -1000 },
+      uPool: { value: new THREE.Vector3(0, 0, 1000) },
+      /* Opaque until the burst asks the pool to leave. */
+      uFade: { value: 1 },
     },
   })
 }
 
-/* --------------------------------------------------------------------- hole */
-
 /**
- * The ground around the hole: a halftone pool of light lying flat, far under the
- * pile, with the opening cut out of its middle. It is what makes a black hole
- * readable on a dark page. Outside the light it draws the page colour and still
- * writes depth, which hides the well's wall where the ground would cover it.
+ * Paint over the lip of a static tube, which has no modeled drip. One quad below
+ * the glass, as wide as the picture: a thin sheet along the lip, and one drip
+ * per bar, each in its bar's colour. uv.x runs with the bars, uv.y is 1 at the lip.
  */
-const HOLE_GROUND_FRAGMENT = /* glsl */ `
-  uniform vec3 uDisc;
-  uniform vec3 uPage;
-  uniform vec3 uRim;
-  uniform vec3 uCentre;
-  uniform float uRadius;
-  uniform float uOpen;
-  uniform float uDots;
-  varying vec3 vWorld;
+const LIP_FRAGMENT = /* glsl */ `
+  uniform vec3 uBars[7];
+  uniform float uDrip;
+  uniform float uSeed;
+  uniform float uAspect;
+  varying vec2 vUv;
+
+  float rand(float n) {
+    return fract(sin(n * 91.7 + uSeed * 13.1) * 43758.5453);
+  }
 
   void main() {
-    vec2 p = vec2(vWorld.z - uCentre.z, vWorld.x - uCentre.x);
-    float radius = length(p) / max(uRadius * uOpen, 0.0001);
-    if (radius < 1.0) discard;
-
-    vec2 grid = p * 0.62;
-    grid.x += step(1.0, mod(grid.y, 2.0)) * 0.5;
-    float spot = length(fract(grid) - 0.5);
-    float edge = fwidth(spot) * 1.2;
-    float hole = 1.0 - smoothstep(0.2 - edge, 0.2 + edge, spot);
-    hole *= (1.0 - smoothstep(0.2, 0.45, fwidth(grid.x))) * uDots;
-
-    float open = clamp(uOpen, 0.0, 1.0);
-    float glow = (1.0 - smoothstep(1.0, 2.6, radius)) * open;
-    vec3 color = mix(uPage, uDisc, glow * (1.0 - hole * 0.85));
-    /* A thin paper-coloured lip, brightest on the far side where it catches the light. */
-    float lipWidth = fwidth(radius) * 1.5 + 0.035;
-    float lip = 1.0 - smoothstep(0.0, lipWidth, radius - 1.0);
-    float farSide = clamp(-p.y / max(length(p), 0.0001), 0.0, 1.0);
-    color = mix(color, uRim, lip * (0.3 + 0.3 * farSide) * open);
-
-    gl_FragColor = vec4(color, 1.0);
+    if (uDrip <= 0.0) discard;
+    float u = vUv.x;
+    float v = 1.0 - vUv.y;
+    float bar = clamp(floor(u * 7.0), 0.0, 6.0);
+    float centre = (bar + 0.5) / 7.0;
+    float width = 0.034 + 0.022 * rand(bar + 7.0);
+    float reach = (0.14 + 0.82 * pow(rand(bar), 1.5)) * uDrip;
+    float across = abs(u - centre) / width;
+    float drip = 0.0;
+    if (across < 1.0) {
+      /* A round end: the drip is shorter towards its edges by the radius of its tip. */
+      float tip = width * uAspect;
+      drip = step(v, reach - tip * (1.0 - sqrt(1.0 - across * across)));
+    }
+    float sheet = step(v, uDrip * (0.05 + 0.025 * sin(u * 37.0 + uSeed)));
+    if (max(drip, sheet) < 0.5) discard;
+    gl_FragColor = vec4(uBars[int(bar)], 1.0);
     #include <colorspace_fragment>
   }
 `
 
-export function createHoleGroundMaterial() {
+/** `aspect` is the quad's width over its height, so a drip's tip stays round. */
+export function createLipMaterial(seed: number, aspect: number) {
   return new THREE.ShaderMaterial({
-    name: "HoleGround",
+    name: "LipPaint",
     vertexShader: VERTEX,
-    fragmentShader: HOLE_GROUND_FRAGMENT,
+    fragmentShader: LIP_FRAGMENT,
     side: THREE.DoubleSide,
     toneMapped: false,
     uniforms: {
-      uDisc: { value: new THREE.Color(HALFTONE_HEX) },
-      uPage: { value: new THREE.Color(PAGE_HEX) },
-      uRim: { value: new THREE.Color(PAPER_HEX) },
-      uCentre: { value: new THREE.Vector3() },
-      uRadius: { value: 1 },
-      uOpen: { value: 0 },
-      uDots: { value: 1 },
-    },
-  })
-}
-
-/** The inside of the hole: a wall that is warm grey at the lip and black a little way down. */
-const HOLE_WELL_FRAGMENT = /* glsl */ `
-  uniform vec3 uWall;
-  uniform vec3 uCentre;
-  uniform float uRadius;
-  varying vec3 vWorld;
-
-  void main() {
-    float depth = (uCentre.y - vWorld.y) / uRadius;
-    vec3 color = uWall * 0.55 * (1.0 - smoothstep(0.0, 0.55, depth));
-    gl_FragColor = vec4(color, 1.0);
-    #include <colorspace_fragment>
-  }
-`
-
-export function createHoleWellMaterial() {
-  return new THREE.ShaderMaterial({
-    name: "HoleWell",
-    vertexShader: VERTEX,
-    fragmentShader: HOLE_WELL_FRAGMENT,
-    side: THREE.BackSide,
-    toneMapped: false,
-    uniforms: {
-      uWall: { value: new THREE.Color(HALFTONE_HEX) },
-      uCentre: { value: new THREE.Vector3() },
-      uRadius: { value: 1 },
+      uBars: sharedUniforms.uBars,
+      uDrip: { value: 0 },
+      uSeed: { value: seed },
+      uAspect: { value: aspect },
     },
   })
 }
@@ -619,6 +580,51 @@ const HALFTONE_FRAGMENT = /* glsl */ `
     #include <colorspace_fragment>
   }
 `
+
+/**
+ * SEMNAL, faint, on a plane behind the sets. The same lock projection as the
+ * glass, so a gap continues the stroke the tubes miss. Discard keeps the
+ * halftone everywhere there is no letter. uGhost erodes it as the burst starts.
+ */
+const GHOST_FRAGMENT = /* glsl */ `
+  uniform sampler2D uWord;
+  uniform mat4 uLockView;
+  uniform vec4 uSpan;
+  uniform float uGhost;
+  uniform vec3 uPage;
+  uniform vec3 uPaper;
+  varying vec3 vWorld;
+
+  void main() {
+    if (uGhost < 0.01) discard;
+    vec4 clip = uLockView * vec4(vWorld, 1.0);
+    vec2 uv = clip.xy / clip.w * 0.5 + 0.5;
+    if (uv.x < uSpan.x || uv.x > uSpan.z || uv.y < uSpan.y || uv.y > uSpan.w) discard;
+    float mask = texture2D(uWord, uv).g;
+    /* As the sets part, the threshold climbs and the bridging strokes disappear. */
+    if (mask < mix(0.42, 0.98, 1.0 - uGhost)) discard;
+    vec3 color = mix(uPage, uPaper, 0.22);
+    gl_FragColor = vec4(color, 1.0);
+    #include <colorspace_fragment>
+  }
+`
+
+export function createGhostMaterial() {
+  return new THREE.ShaderMaterial({
+    name: "SignalGhost",
+    vertexShader: VERTEX,
+    fragmentShader: GHOST_FRAGMENT,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    depthTest: true,
+    depthWrite: true,
+    uniforms: {
+      ...wordUniforms,
+      uPage: { value: new THREE.Color(PAGE_HEX) },
+      uPaper: { value: new THREE.Color(PAPER_HEX) },
+    },
+  })
+}
 
 export function createHalftoneMaterial() {
   return new THREE.ShaderMaterial({
