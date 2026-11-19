@@ -96,7 +96,7 @@ const AD_CHANNELS = [
 ] as const;
 
 /** The six TV bars of the work beat, in screen order. */
-const FLUX_BARS = [
+export const FLUX_BARS = [
   "bg-flux-yellow",
   "bg-flux-cyan",
   "bg-flux-green",
@@ -181,7 +181,7 @@ function Rolling({
 /* ------------------------------------------------------------- card parts */
 
 /** A shadcn Card in ink and paint. On hover it lifts off a hard cel shadow in its own colour. */
-function BentoCard({
+export function BentoCard({
   accent,
   className,
   children,
@@ -205,7 +205,7 @@ function BentoCard({
 }
 
 /** Two-tone title: the subject in paper, the rest in pencil. */
-function Title({ strong, soft }: { strong: string; soft: string }) {
+export function Title({ strong, soft }: { strong: string; soft: string }) {
   return (
     <CardTitle className="text-xl leading-tight font-bold tracking-[-0.02em] text-eggshell md:text-[1.4rem]">
       {strong} <span className="text-(--accent)">{soft}</span>
@@ -213,7 +213,7 @@ function Title({ strong, soft }: { strong: string; soft: string }) {
   );
 }
 
-function Lead({ children }: { children: ReactNode }) {
+export function Lead({ children }: { children: ReactNode }) {
   return (
     <CardDescription className="max-w-md text-sm leading-relaxed text-platinum/75">
       {children}
@@ -603,10 +603,15 @@ export function FlowBento() {
   const maxVisitors = Math.max(...points.map((item) => item.visitors));
   const maxRevenue = Math.max(...point.channels.map((channel) => channel.revenue));
 
+  /*
+   * overflow-hidden, not overflow-x-clip: on phones the swing-in parks cards
+   * off to the side, and Safari before iOS 16 ignores `clip`, widens the page
+   * and zooms the whole site out.
+   */
   return (
     <section
       id="proces"
-      className="scroll-mt-28 overflow-x-clip bg-background px-5 py-24 md:scroll-mt-24 md:px-10 md:py-32"
+      className="scroll-mt-28 overflow-hidden bg-background px-5 py-24 md:scroll-mt-24 md:px-10 md:py-32"
     >
       <div ref={root} className="mx-auto w-full max-w-6xl">
         {/* Shared paint for the charts. */}

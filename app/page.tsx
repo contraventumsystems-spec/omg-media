@@ -1,5 +1,6 @@
 import { ChannelChange } from "@/app/components/channel-change";
 import { Closing } from "@/app/components/closing";
+import { CreativeBento } from "@/app/components/creative-bento";
 import { FlowBento } from "@/app/components/flow-bento";
 import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
@@ -28,6 +29,7 @@ export default function Home() {
           <Work />
           <FlowBento />
           <AiSystem />
+          <CreativeBento />
           <Fit />
           <Faq />
           <Closing />
