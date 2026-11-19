@@ -93,7 +93,7 @@ export const WORK_BEAT = {
   /** Camera pushes into the centre screen between these two. */
   pushStart: 0.2,
   pushEnd: 0.62,
-  /** The DOM carousel takes over from the canvas here, behind a channel change. */
+  /** The centre screen's bars fill the frame: the cut to "Pentru cine" fires here (channel-change.tsx). */
   cover: 0.66,
 } as const
 

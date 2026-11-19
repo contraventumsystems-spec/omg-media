@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
 import { BAR_HEX, LIQUID_HEX } from "@/app/lib/bars";
 import { HERO_BEAT } from "@/app/lib/hero-rig";
+import { WORK_BEAT } from "@/app/lib/scene-store";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -16,6 +17,8 @@ const COOLDOWN_MS = 900;
 const SNAP_GATE = HERO_BEAT.wipeEnd + 0.004;
 /** Where the cut back up lands: the sets are coming home and the bars have not started to widen. */
 const SNAP_BACK = HERO_BEAT.wipeStart - 0.012;
+/** Where the cut back up from "Pentru cine" lands: the camera is still pushing in. */
+const WORK_SNAP_BACK = WORK_BEAT.pushEnd - 0.14;
 /** Scroll input is held this long around a cut, so momentum cannot carry past the landing. */
 const LOCK_S = { cut: 0.75, handoff: 0.56 } as const;
 
@@ -26,12 +29,51 @@ const LOCK_S = { cut: 0.75, handoff: 0.56 } as const;
  */
 type Kind = "burst" | "cut" | "handoff";
 
+type ChannelOptions = {
+  /** "cut" is the long one with the bar wipe and jolts; the default is the short burst. */
+  kind?: "burst" | "cut";
+  /** Bar colours for the cut. Defaults to the paint of the hero's bars. */
+  colors?: readonly string[];
+};
+
 /**
  * Plays the burst. `onCovered` runs while the screen is hidden by static,
  * which is the moment to jump the page or swap content.
  */
-export function channelChange(onCovered?: () => void) {
-  window.dispatchEvent(new CustomEvent(EVENT, { detail: { onCovered } }));
+export function channelChange(onCovered?: () => void, options: ChannelOptions = {}) {
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: { onCovered, ...options } }));
+}
+
+/**
+ * True while the scroll helper is moving the page itself. The hero/services
+ * cut would otherwise lock that motion and drop the reader inside the hero.
+ */
+let channelCutHeld = false;
+
+/** Holds the cut until the returned function runs. One helper jump at a time. */
+export function holdChannelCut(): () => void {
+  channelCutHeld = true;
+  return () => {
+    channelCutHeld = false;
+  };
+}
+
+/**
+ * The empty stretch the cut normally hides: from the frame the hero's bars
+ * have covered to the services heading. Null when reduced motion has no beat.
+ */
+export function heroServicesSeam(): { gate: number; landing: number } | null {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+  const hero = document.getElementById("hero");
+  const services = document.getElementById("servicii");
+  if (!hero || !services) return null;
+  const travel = hero.offsetHeight - window.innerHeight;
+  if (travel < 8) return null;
+  const top = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY;
+  const gate = Math.ceil(top(hero) + travel * SNAP_GATE);
+  const landing = Math.ceil(top(services));
+  if (landing <= gate + 2) return null;
+  return { gate, landing };
 }
 
 /**
@@ -108,7 +150,11 @@ export function ChannelChange() {
        * the same picture with no static and no wipe in. 0 to 300 ms the bars jolt,
        * 300 to 500 ms they wipe off.
        */
-      const play = (onCovered?: () => void, kind: Kind = "burst") => {
+      const play = (
+        onCovered?: () => void,
+        kind: Kind = "burst",
+        colors: readonly string[] = LIQUID_HEX,
+      ) => {
         const now = performance.now();
         if (playing || (kind === "burst" && now - lastRun < COOLDOWN_MS)) {
           onCovered?.();
@@ -143,7 +189,7 @@ export function ChannelChange() {
         drawNoise();
 
         if (kind === "handoff") {
-          paint(LIQUID_HEX);
+          paint(colors);
           const timeline = gsap
             .timeline({ onComplete: done })
             .set(overlay, { autoAlpha: 1, clipPath: "inset(0 0 0 0%)" })
@@ -159,7 +205,7 @@ export function ChannelChange() {
         }
 
         if (kind === "cut") {
-          paint(LIQUID_HEX);
+          paint(colors);
           const timeline = gsap
             .timeline({ onComplete: done })
             .set(overlay, { autoAlpha: 1, clipPath: "inset(0 0 0 0%)" })
@@ -186,7 +232,8 @@ export function ChannelChange() {
       };
 
       const onEvent = (event: Event) => {
-        play((event as CustomEvent<{ onCovered?: () => void }>).detail?.onCovered);
+        const detail = (event as CustomEvent<{ onCovered?: () => void } & ChannelOptions>).detail;
+        play(detail?.onCovered, detail?.kind, detail?.colors);
       };
 
       const onClick = (event: MouseEvent) => {
@@ -225,7 +272,10 @@ export function ChannelChange() {
         ScrollTrigger.create({
           trigger: services,
           start: "top 55%",
-          onEnter: () => play(),
+          onEnter: () => {
+            if (channelCutHeld) return;
+            play();
+          },
         });
       });
 
@@ -239,21 +289,16 @@ export function ChannelChange() {
        * Either way the stretch itself is never seen.
        */
       media.add("(prefers-reduced-motion: no-preference)", () => {
-        if (!hero || !services) return;
-
         const pageTop = (element: HTMLElement) =>
           element.getBoundingClientRect().top + window.scrollY;
-        const travel = () => hero.offsetHeight - window.innerHeight;
-        /* Where the upward cut lands. */
-        const back = () => Math.floor(pageTop(hero) + travel() * SNAP_BACK);
-        /* Where the hero's bars have covered the frame and the downward cut fires. */
-        const gate = () => Math.ceil(pageTop(hero) + travel() * SNAP_GATE);
-        /* Services top at the viewport top: the heading sits in its sticky place. */
-        const landing = () => Math.ceil(pageTop(services));
 
         let unlock: (() => void) | null = null;
 
-        const cut = (to: () => number, kind: "cut" | "handoff") => {
+        const cut = (
+          to: () => number,
+          kind: "cut" | "handoff",
+          colors: readonly string[],
+        ) => {
           if (unlock) return;
           /* Until the static covers the screen the page stays where it is, then at the landing. */
           let target = window.scrollY;
@@ -275,30 +320,82 @@ export function ChannelChange() {
             unlock = null;
           };
 
-          play(() => {
-            target = to();
-            window.scrollTo({ top: target, behavior: "instant" });
-            /* Finish every scrub now, so no beat is still catching up when the static lifts. */
-            ScrollTrigger.update();
-            ScrollTrigger.getAll().forEach((trigger) => {
-              /* Only a numeric scrub has a tween to finish. */
-              const tween = trigger.getTween() as gsap.core.Tween | undefined;
-              if (typeof tween?.progress === "function") tween.progress(1);
-            });
-          }, kind);
+          play(
+            () => {
+              target = to();
+              window.scrollTo({ top: target, behavior: "instant" });
+              /* Finish every scrub now, so no beat is still catching up when the static lifts. */
+              ScrollTrigger.update();
+              ScrollTrigger.getAll().forEach((trigger) => {
+                /* Only a numeric scrub has a tween to finish. */
+                const tween = trigger.getTween() as gsap.core.Tween | undefined;
+                if (typeof tween?.progress === "function") tween.progress(1);
+              });
+            },
+            kind,
+            colors,
+          );
         };
 
-        ScrollTrigger.create({
-          start: gate,
-          end: () => landing() - 2,
-          /* A jump clean over the stretch (an anchor link, the End key) is left alone. */
-          onEnter: (self) => {
-            if (self.scroll() < self.end) cut(landing, "handoff");
-          },
-          onEnterBack: (self) => {
-            if (self.scroll() > self.start) cut(back, "cut");
-          },
-        });
+        /**
+         * One dead stretch the reader never sees. Entering it from above hands
+         * the full bars to the overlay and lands below; entering it from below
+         * plays the long cut and lands back above it.
+         */
+        const seam = (
+          gate: () => number,
+          landing: () => number,
+          back: () => number,
+          colors: readonly string[],
+        ) => {
+          ScrollTrigger.create({
+            start: gate,
+            end: () => landing() - 2,
+            /* A jump clean over the stretch (an anchor link, the End key) is left alone. */
+            onEnter: (self) => {
+              if (channelCutHeld) return;
+              if (self.scroll() < self.end) cut(landing, "handoff", colors);
+            },
+            onEnterBack: (self) => {
+              if (channelCutHeld) return;
+              if (self.scroll() > self.start) cut(back, "cut", colors);
+            },
+          });
+        };
+
+        if (hero && services) {
+          const travel = () => hero.offsetHeight - window.innerHeight;
+          seam(
+            /* The hero's bars have covered the frame. */
+            () => Math.ceil(pageTop(hero) + travel() * SNAP_GATE),
+            /* Services top at the viewport top: the heading sits in its sticky place. */
+            () => Math.ceil(pageTop(services)),
+            /* The sets are coming home. */
+            () => Math.floor(pageTop(hero) + travel() * SNAP_BACK),
+            LIQUID_HEX,
+          );
+        }
+
+        /*
+         * The cut between the TV push-in and "Pentru cine". Once the centre
+         * screen's bars fill the frame, the rest of the work track and the
+         * audience section rising over it are about 190svh with nothing new.
+         * The overlay takes the same seven bars and lands with the audience
+         * section at the top, so its heading pop and cards play at once.
+         */
+        const workTrack = document.querySelector<HTMLElement>("[data-work-track]");
+        const audience = document.getElementById("pentru-cine");
+        if (workTrack && audience) {
+          /* Scroll position for a work progress, which starts at the track's top on the viewport's bottom. */
+          const atWork = (progress: number) =>
+            pageTop(workTrack) - window.innerHeight + workTrack.offsetHeight * progress;
+          seam(
+            () => Math.ceil(atWork(WORK_BEAT.cover)),
+            () => Math.ceil(pageTop(audience)),
+            () => Math.floor(atWork(WORK_SNAP_BACK)),
+            BAR_HEX,
+          );
+        }
 
         return () => unlock?.();
       });

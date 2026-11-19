@@ -289,6 +289,50 @@ body {
   }
 }
 
+/* Scroll helper: the chevron lifts a few pixels, the way the hero hint travels. */
+.helper-bob {
+  animation: helper-bob 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes helper-bob {
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/*
+ * The choices open with one channel flicker: a skew, a cyan/magenta split,
+ * then they sit. `translateX(-50%)` keeps the panel centered on the button.
+ */
+.helper-pop {
+  transform: translateX(-50%);
+  animation: helper-pop 220ms steps(3, jump-end) both;
+}
+
+@keyframes helper-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) skewX(-8deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(calc(-50% + 3px)) skewX(5deg);
+    box-shadow: 2px 0 0 var(--bar-cyan), -2px 0 0 var(--bar-magenta);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(calc(-50% - 2px)) skewX(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
 /* FAQ: the plus flickers for 120 ms when an item opens, in hard steps like a channel cut. */
 details[open] > summary .faq-mark {
   animation: faq-flicker 120ms steps(2, jump-none) 1;
@@ -318,7 +362,9 @@ details[open] > summary .faq-mark {
   }
 
   .scroll-hint::after,
-  details[open] > summary .faq-mark {
+  details[open] > summary .faq-mark,
+  .helper-bob,
+  .helper-pop {
     animation: none;
   }
 }
@@ -653,32 +699,178 @@ details[open] > summary .faq-mark {
 }
 
 /*
- * Pillar cabinet (app/components/pillar-cabinet.tsx). Phones stack the set,
- * the drawer row and the broadcast. From lg the set sits over its drawers on
- * the left and the broadcast fills the right, so a drawer and what it holds
- * are always on screen together.
+ * "Ce construim" (app/components/pillar-cabinet.tsx): three sets on a sticky stage.
+ * Phones: three rows down the stage in a zig-zag, each set beside its label,
+ * the set two thirds of the width, so all three fit under the heading.
+ * From md: one row of three, the middle set larger, labels underneath.
  */
-@media (min-width: 1024px) {
-  .cabinet-grid {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas:
-      "tv screen"
-      "drawers screen"
-      ". screen";
+.channel-sets {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.channel-tile {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.channel-set:nth-child(2) .channel-tile {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.channel-set:nth-child(2) .channel-label > span:first-child {
+  justify-content: flex-end;
+}
+
+/* Phones: two thirds of the row's width; the label takes the rest. */
+.channel-screen {
+  width: 66%;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+}
+
+.channel-label {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .channel-sets {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
   }
 
-  .cabinet-tv {
-    grid-area: tv;
+  .channel-tile,
+  .channel-set:nth-child(2) .channel-tile {
+    height: auto;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
   }
 
-  .cabinet-drawers {
-    grid-area: drawers;
+  .channel-label > span:first-child,
+  .channel-set:nth-child(2) .channel-label > span:first-child {
+    justify-content: center;
   }
 
-  .cabinet-screen {
-    grid-area: screen;
-    align-self: start;
+  /* As wide as the column, but never taller than the stage leaves under the heading. */
+  .channel-screen {
+    height: auto;
+    width: min(100%, calc((100svh - 17rem) * 4 / 3));
+    max-width: none;
+  }
+}
+
+/* The page stays put under an open broadcast. */
+html:has(.channel-dialog[open]) {
+  overflow: hidden;
+}
+
+/* Faint scanlines over the broadcast, the same tube as the sets. */
+.channel-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.16) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* The glow under a tuned set breathes, so the three read as live. */
+.channel-glow {
+  animation: channel-glow 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes channel-glow {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+/* The broadcast's tube: offset shadow in the channel colour, and a bright band that rolls down the glass. */
+.channel-tube {
+  transform-origin: 50% 50%;
+}
+
+.channel-tube::after {
+  content: "";
+  position: absolute;
+  inset: -20% 0 auto;
+  z-index: 5;
+  height: 18%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgb(243 233 210 / 0.035), transparent);
+  animation: channel-roll 7s linear infinite;
+}
+
+@keyframes channel-roll {
+  to {
+    transform: translateY(800%);
+  }
+}
+
+@media (min-width: 768px) {
+  .channel-tube {
+    box-shadow: 8px 8px 0 var(--tube-color);
+  }
+}
+
+.channel-dialog::backdrop {
+  background: rgb(12 9 7 / 0.85);
+  transition: opacity 0.3s ease;
+}
+
+.channel-dialog[data-closing]::backdrop {
+  opacity: 0;
+}
+
+/* A card lifts toward the reader and throws its colour, like the CTAs. */
+.channel-card {
+  box-shadow: inset 0 4px 0 var(--card-color);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+
+.channel-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow:
+    inset 0 4px 0 var(--card-color),
+    4px 4px 0 var(--card-color);
+}
+
+/* Static between channels: scanlines over coarse noise columns, tall enough to roll. */
+.channel-static {
+  background:
+    repeating-linear-gradient(0deg, rgb(243 233 210 / 0.3) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(18 14 11 / 0.7) 0 2px, rgb(243 233 210 / 0.22) 2px 3px, transparent 3px 7px),
+    repeating-linear-gradient(0deg, rgb(243 233 210 / 0.12) 0 9px, rgb(18 14 11 / 0.5) 9px 17px),
+    #2b241c;
+  background-size: 100% 25%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-glow,
+  .channel-tube::after {
+    animation: none;
+  }
+
+  .channel-card {
+    transition: none;
+  }
+
+  .channel-card:hover {
+    transform: none;
   }
 }
 
@@ -762,18 +954,3 @@ details[open] > summary .faq-mark {
   }
 }
 
-/* Static between channels: fine scanlines over coarse grey noise columns. */
-.cabinet-static {
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgb(243 233 210 / 0.25) 0 1px,
-      transparent 1px 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgb(18 14 11 / 0.6) 0 2px,
-      rgb(243 233 210 / 0.18) 2px 3px,
-      transparent 3px 6px
-    );
-}

@@ -15,6 +15,7 @@ import {
   Services,
   Work,
 } from "@/app/components/home-sections";
+import { ScrollHelper } from "@/app/components/scroll-helper";
 import { StickyWhatsApp } from "@/app/components/sticky-whatsapp";
 import { TvBackdrop } from "@/app/components/tv-backdrop";
 
@@ -51,6 +52,7 @@ export default function Home() {
         <Footer />
       </div>
       <StickyWhatsApp />
+      <ScrollHelper />
       <ChannelChange />
     </>
   );
