@@ -431,6 +431,13 @@ details[open] > summary .faq-mark {
   }
 }
 
+/* FAQ channels grow tall when open, so they lift straight, without the tilt. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bento-card.faq-group:hover {
+    transform: translate(-3px, -3px);
+  }
+}
+
 /*
  * Touch screens have no hover, so a tap squashes the card instead. The CSS
  * `scale` property stacks on GSAP's transform, so it never fights the scroll tween.

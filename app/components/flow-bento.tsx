@@ -58,16 +58,16 @@ import { cn } from "@/lib/utils";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const HEADING =
-  "Marketing, software și multă pasiune, canalizate într-un singur flux.";
+  "Fiecare leu se vede, de la reclamă la cerere.";
 /** The last words get the seven-bar stroke, as "crește." does on the floor. */
 const PAYOFF_WORDS = 2;
 
 /** The one-flow feed: one request, every step after it. */
 const STEPS = [
   "Audit pe nișa și zona ta",
-  "Strategie pe KPI care au mers",
+  "Strategie pe ce a funcționat",
   "Reclame pe Google, Meta și TikTok",
-  "Landing page optimizat",
+  "Landing page optimizată",
   "Cerere măsurată, gata de răspuns",
 ] as const;
 
@@ -380,7 +380,7 @@ function FlowFeed() {
 /* ---------------------------------------------------------------- section */
 
 /**
- * "Cum lucrăm": one flow, shown as a sample dashboard on shadcn/ui cards.
+ * "Fluxul": one flow, shown as a sample dashboard on shadcn/ui cards.
  *
  * Pick a period on the visitors card, hover a bar to preview a point, click to
  * keep it, and every tile turns to it: the cost of an enquiry, where visitors
@@ -633,7 +633,7 @@ export function FlowBento() {
 
         <header className="mx-auto max-w-5xl text-center">
           <p data-flux-lead className="type-index text-dim">
-            Cum lucrăm
+            Fluxul
           </p>
           <h2
             data-flux-heading
@@ -665,7 +665,7 @@ export function FlowBento() {
           <p data-flux-lead className="type-lead mx-auto mt-4 text-platinum">
             Plecăm de la o singură cerere și construim tot traseul logic, pe ce a
             funcționat în piață și pe ce a funcționat la tine: de la idee la
-            reclamă, la landing page optimizat cu software de ultimă generație.
+            reclamă, la landing page optimizată cu software de ultimă generație.
           </p>
           {/* Sample-data note, kept with the figures below it. */}
           <div data-flux-lead className="mt-6 flex justify-center md:mt-8">
@@ -750,7 +750,7 @@ export function FlowBento() {
           {/* One flow: the request walks every step, then the feed starts over. */}
           <BentoCard accent="var(--flux-violet)" className="md:col-span-2 lg:col-span-1">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Un singur" soft="flux" />
+              <Title strong="Pâlnia" soft="de conversie" />
               <Lead>O singură cerere de la tine. Tot traseul de la noi, pas cu pas.</Lead>
             </CardHeader>
             <CardContent>

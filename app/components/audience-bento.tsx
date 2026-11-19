@@ -9,7 +9,9 @@ import { CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
- * "Pentru cine": who the agency works for, as the third and simplest bento.
+ * "Pentru cine": who the agency works for, as the simplest bento. It is the
+ * first section after the 3D beats, so a visitor recognises their business
+ * before the steps and the charts.
  * The text is the point, so the cards carry only a number, a title and the copy.
  *
  * Desktop: four columns, two rows. Tablet: two columns. Phone: one column of

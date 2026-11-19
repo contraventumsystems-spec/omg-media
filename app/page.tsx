@@ -7,18 +7,26 @@ import { PillarCabinet } from "@/app/components/pillar-cabinet";
 import { ProcessJourney } from "@/app/components/process-journey";
 import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
+import { FaqBoard } from "@/app/components/faq-board";
 import { Hero } from "@/app/components/hero";
 import { OutroFlux } from "@/app/components/outro-flux";
+import { ProofBridge } from "@/app/components/proof-bridge";
 import {
-  AiSystem,
-  Faq,
   Services,
   Work,
 } from "@/app/components/home-sections";
 import { StickyWhatsApp } from "@/app/components/sticky-whatsapp";
 import { TvBackdrop } from "@/app/components/tv-backdrop";
 
-/** Homepage only. The TV sits behind the hero; each section after it is solid. */
+/**
+ * Homepage only. The TV sits behind the hero; each section after it is solid.
+ *
+ * Story order: what we do (hero, the three pillars, the work beat as a visual
+ * pause), who it is for, how we work (the six steps, then the drawers), proof
+ * (the charts, then the content), why you can rely on us, questions, contact.
+ * Hero, Services and Work are one 3D camera move on the fixed canvas, so they
+ * stay together and in this order.
+ */
 export default function Home() {
   return (
     <>
@@ -28,16 +36,16 @@ export default function Home() {
         <main>
           <Hero />
           <Services />
-
           <Work />
-          <FlowBento />
-          <AiSystem />
-          <CreativeBento />
+
+          <AudienceBento />
           <ProcessJourney />
           <PillarCabinet />
-          <AudienceBento />
+          <FlowBento />
+          <ProofBridge />
+          <CreativeBento />
           <OutroFlux />
-          <Faq />
+          <FaqBoard />
           <Closing />
         </main>
         <Footer />

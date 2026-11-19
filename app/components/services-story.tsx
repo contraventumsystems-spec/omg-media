@@ -41,7 +41,7 @@ const MARKS: Record<ServiceId, { icon: string; groups: number[] }> = {
 };
 
 const CLOSE =
-  "Sistemul A.I. — firul care le leagă pe toate și îți economisește timp și bani.";
+  "Un singur flux — firul care le leagă pe toate, de la idee până la cerere.";
 /** The last words of the closing line get the stroke, as "crește." does on the floor. */
 const PAYOFF_WORDS = 3;
 
@@ -170,7 +170,7 @@ export function PopText({ text, stop }: { text: string; stop?: string }) {
  *                                         ad platforms as one run, Social media
  *   design, design-1, design-2            rule to pencil, brand work, then video
  *   tehnologie, tehnologie-1 to -3        rule to chip, three separate beats
- *   close                                 the A.I. line, word by word, and the
+ *   close                                 the flux line, word by word, and the
  *                                         seven-bar stroke under its last words
  *   rest                                  the stage turns solid, so the canvas is
  *                                         hidden when the camera changes beat
@@ -385,7 +385,7 @@ export function ServicesStory() {
                     <ul key={line[0]} className="text-balance">
                       {line.map((item) => (
                         <li key={item} className="inline">
-                          {/* "Sistem A.I." already ends in a full stop; it takes the coloured one instead. */}
+                          {/* A trailing full stop is dropped, then drawn again in the category colour. */}
                           <PopText
                             text={item.replace(/\.$/, "")}
                             stop={service.accent}

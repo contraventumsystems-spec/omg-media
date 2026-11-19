@@ -19,7 +19,8 @@ const LINE = { stroke: INK, strokeWidth: 3, strokeLinejoin: "round" as const, st
 /**
  * The six steps, in the agency's own path: an audit of the niche first,
  * proven KPIs checked against the client's market, a strategy built around
- * their values, the route from ad to enquiry on modern software, the content,
+ * their values, the route from ad to enquiry across page, form and request
+ * panel, the content,
  * then campaigns that get cheaper as they get more precise.
  */
 const STEPS = [
@@ -50,7 +51,7 @@ const STEPS = [
   {
     key: "route",
     title: "Traseul & software-ul",
-    body: "Construim drumul de la reclamă la cerere: landing page rapid, formular, răspuns automat și panou de cereri, pe software de ultimă generație.",
+    body: "Construim drumul de la reclamă la cerere: landing page, formular, confirmare și panou de cereri, legate între ele.",
     gets: "Landing page-ul optimizat și fluxul de cereri, gata de lansare.",
     short: "Landing & software",
     accent: "var(--flux-green)",
@@ -504,7 +505,7 @@ export function ProcessJourney() {
               <div>
                 <p data-in className="font-mono text-xs tracking-[0.14em] text-dim uppercase">Pe scurt</p>
                 <h3 data-in className="mt-2 font-display text-2xl leading-tight font-bold tracking-[-0.02em] text-eggshell md:text-3xl">
-                  Un singur flux, <span className="text-flux-cyan">de la idee la cereri.</span>
+                  Proces predictibil, <span className="text-flux-cyan">rezultate măsurabile.</span>
                 </h3>
               </div>
               <div className="relative">
@@ -534,10 +535,10 @@ export function ProcessJourney() {
               </div>
               <a
                 data-in
-                href="#contact"
+                href="#ce-construim"
                 className="inline-flex h-11 w-full items-center justify-center self-center rounded-full bg-eggshell px-6 text-sm font-semibold text-background shadow-[4px_4px_0_var(--flux-cyan)] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 md:w-auto"
               >
-                Hai să vorbim
+                Vezi ce intră în fiecare pilon
               </a>
             </li>
           </ol>

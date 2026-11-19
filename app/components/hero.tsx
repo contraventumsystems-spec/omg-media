@@ -50,7 +50,7 @@ export function Hero() {
               </span>
             </h1>
             <p className="mt-5 max-w-md text-base leading-normal text-platinum md:mt-7 md:text-lg md:leading-relaxed">
-              Punem strategia, designul și tehnologia în aceeași direcție.
+              Strategie, design și tehnologie pe același traseu, de la idee până la cerere.
             </p>
             {/* The canvas measures the bottom of this row: on a phone the pile starts below it. */}
             <div data-hero-copy-end className="mt-8 flex flex-wrap items-center gap-5 md:mt-10">

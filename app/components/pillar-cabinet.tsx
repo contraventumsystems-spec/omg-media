@@ -100,7 +100,7 @@ const PILLARS: Pillar[] = [
       },
       {
         title: "Automatizări pentru afacerea ta",
-        body: "Conectăm formularele, programările, mesajele și CRM-ul, astfel încât informația să ajungă unde trebuie. Alegem automatizările și soluțiile AI care îți simplifică munca de zi cu zi.",
+        body: "Conectăm formularele, programările, mesajele și CRM-ul, astfel încât informația să ajungă unde trebuie. Automatizările le alegem doar acolo unde îți scutesc o treabă repetată.",
       },
       {
         title: "Măsurare de la prima zi",
@@ -353,7 +353,7 @@ export function PillarCabinet() {
     <section ref={root} id="ce-construim" aria-labelledby="ce-construim-title" className="bg-background px-4 py-24 sm:px-5 md:px-10 md:py-32">
       <div className="mx-auto w-full max-w-6xl">
         <header className="mx-auto max-w-3xl text-center">
-          <p className="type-index text-dim">Cum lucrăm, în detaliu</p>
+          <p className="type-index text-dim">În fiecare pilon</p>
           <h2 id="ce-construim-title" className="type-h2 mt-2 text-balance text-eggshell">
             Ce construim, sertar cu sertar.
           </h2>

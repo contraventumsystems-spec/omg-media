@@ -10,7 +10,7 @@ export const site = {
   phone: "40000000000",
   title: "Idei care prind formă — strategie, design și tehnologie",
   description:
-    "Website-uri, reclame și sisteme A.I. pentru firme care vor mai multe cereri. Punem strategia, designul și tehnologia în aceeași direcție.",
+    "Site, conținut și reclame pentru firme care vor cereri, nu doar vizite. Strategie, design și tehnologie, pe același traseu.",
 } as const;
 
 export const defaultWhatsappText =
@@ -23,8 +23,8 @@ export function whatsappHref(text: string = defaultWhatsappText) {
 
 export const nav = [
   { href: "#servicii", label: "Servicii" },
-  { href: "#proces", label: "Cum lucrăm" },
-  { href: "#despre", label: "Despre" },
+  { href: "#drum", label: "Cum lucrăm" },
+  { href: "#pe-ce-te-bazezi", label: "Despre" },
 ] as const;
 
 export const services = [
@@ -37,8 +37,8 @@ export const services = [
       "Google Ads",
       "Meta Ads",
       "TikTok Ads",
-      "ChatGPT Ads",
       "Social media",
+      "Audit de nișă",
     ],
   },
   {
@@ -59,7 +59,7 @@ export const services = [
     label: "Tehnologie",
     accent: "text-bar-green",
     rule: "bg-bar-green",
-    items: ["Website", "Magazin online", "Sistem A.I."],
+    items: ["Website", "Landing page", "Automatizări"],
   },
 ] as const;
 
@@ -115,9 +115,9 @@ export const processSteps = [
 ] as const;
 
 export const outcomes = [
-  "Răspuns în secunde, nu în ore.",
-  "Zero cereri pierdute.",
-  "Mai puțin timp la telefon, mai mult pe lucrări.",
+  "Știi cui vorbești și ce măsori, înainte de lansare.",
+  "Pagina și materialele duc spre aceeași cerere.",
+  "Campaniile pornesc când traseul e gata, apoi le facem mai precise.",
 ] as const;
 
 export const audiences = [
@@ -129,36 +129,158 @@ export const audiences = [
 ] as const;
 
 /**
- * Draft answers so the accordion has real sentences.
- * Replace them when the final FAQ copy is ready.
+ * Questions before a project starts, grouped by service. Each group is one card
+ * on the FAQ board; its accent is the paint of the matching pillar. The answers
+ * match the offer and the drawers above them: accounts in the client's name, the
+ * ad budget paid straight to the platforms, prices in writing after the evaluation.
  */
-export const faqs = [
+export const faqGroups = [
   {
-    question: "Poți folosi site-ul existent?",
-    answer: "Da. Pornim de la ce ai deja și schimbăm doar ce nu aduce cereri.",
+    id: "marketing",
+    label: "Marketing",
+    scope: "Strategie, reclame și social media",
+    accent: "var(--flux-cyan)",
+    items: [
+      {
+        question: "Cât costă promovarea?",
+        answer:
+          "Depinde de canale, de volumul de conținut și de ritmul campaniilor. Oferta separă etapa de început de colaborarea lunară, iar prețul exact îl primești în scris după evaluare.",
+      },
+      {
+        question: "Bugetul de reclame e inclus?",
+        answer:
+          "Nu. Îl stabilim împreună și îl plătești direct platformelor, din conturile tale. Noi îl administrăm și îți arătăm unde merge fiecare leu.",
+      },
+      {
+        question: "De ce nu pornim direct cu reclamele?",
+        answer:
+          "Ca bugetul să lucreze pe un plan verificat. Întâi pregătim pagina, mesajele și răspunsul la cereri, ca fiecare om adus de reclame să ajungă la tine.",
+      },
+      {
+        question: "Când văd primele cifre?",
+        answer:
+          "Măsurăm punctul de pornire înainte de lansare, ca să avem cu ce compara. Primul raport vine la intervalul stabilit în ofertă, împreună cu propunerile de ajustare.",
+      },
+      {
+        question: "Pe ce platforme lucrați?",
+        answer:
+          "Google, Meta și TikTok. Alegem canalele după locul în care te caută clienții, nu după ce e la modă.",
+      },
+      {
+        question: "Lucrați doar în anumite domenii?",
+        answer:
+          "Nu. Domeniile de mai sus sunt exemple. La prima discuție îți spunem sincer dacă și cum te putem ajuta.",
+      },
+    ],
   },
   {
-    question: "Cât costă?",
-    answer:
-      "Îți spunem după o evaluare scurtă, în funcție de site, reclame și sistem.",
+    id: "website",
+    label: "Website / E-commerce",
+    scope: "Site-uri, magazine online și automatizări",
+    accent: "var(--flux-green)",
+    items: [
+      {
+        question: "Puteți folosi site-ul existent?",
+        answer: "Da. Pornim de la ce ai deja și schimbăm doar ce nu aduce cereri.",
+      },
+      {
+        question: "Cât durează un site?",
+        answer:
+          "Un site de prezentare pornește în câteva săptămâni. Un magazin online depinde de numărul de produse și de integrări. Termenul exact e scris în ofertă.",
+      },
+      {
+        question: "Faceți și magazine online?",
+        answer:
+          "Da. Construim catalogul, coșul și plata, apoi conectăm livrarea și facturarea de care ai nevoie.",
+      },
+      {
+        question: "Pot modifica singur site-ul?",
+        answer:
+          "Da. Stabilim ce vrei să schimbi singur și pregătim soluția potrivită. La predare îți arătăm cum o folosești.",
+      },
+      {
+        question: "Ale cui sunt domeniul și site-ul?",
+        answer: "Ale tale. Domeniul, site-ul și conturile rămân pe numele firmei.",
+      },
+      {
+        question: "Ce costuri apar după lansare?",
+        answer:
+          "Găzduirea, domeniul și, dacă o vrei, mentenanța. Le clarificăm înainte. Când proiectul permite o variantă gratuită potrivită, o folosim.",
+      },
+    ],
   },
   {
-    question: "Cine deține conturile?",
-    answer:
-      "Tu. Conturile de reclame, site-ul și domeniul rămân pe numele firmei.",
+    id: "design",
+    label: "Graphic Design & Logo",
+    scope: "Identitate, logo și materiale grafice",
+    accent: "var(--flux-magenta)",
+    items: [
+      {
+        question: "Ce primesc la un logo?",
+        answer:
+          "Simbolul, variantele de culoare și de fundal, fișierele pentru print și online, plus un ghid scurt de folosire.",
+      },
+      {
+        question: "Cum alegem varianta finală?",
+        answer:
+          "Pornim cu câteva direcții. Alegi una, apoi o rafinăm împreună până la versiunea finală.",
+      },
+      {
+        question: "Pot păstra logo-ul actual?",
+        answer:
+          "Da. Îl putem curăța și adapta pentru online, fără să pierdem ce recunosc deja clienții tăi.",
+      },
+      {
+        question: "Ce materiale grafice faceți?",
+        answer:
+          "Postări, bannere, afișe, prezentări și materiale pentru reclame, în formatele cerute de fiecare platformă.",
+      },
+      {
+        question: "Ale cui sunt fișierele?",
+        answer:
+          "Fișierele finale sunt ale tale. Ce intră în predare, inclusiv sursele, scriem în ofertă.",
+      },
+    ],
   },
   {
-    question: "Bugetul de reclame e inclus?",
-    answer: "Nu. Bugetul de media îl setezi tu. Noi îl administrăm.",
-  },
-  {
-    question: "Cât durează?",
-    answer:
-      "Un site simplu pornește în câteva săptămâni. Îți dăm un termen după evaluare.",
+    id: "video",
+    label: "Video Shooting & Editing",
+    scope: "Filmare, foto și editare video",
+    accent: "var(--flux-yellow)",
+    items: [
+      {
+        question: "Trebuie să apar în clipuri?",
+        answer:
+          "Nu neapărat. Putem filma produsul, echipa sau procesul. Când apari tu, te ghidăm la fiecare cadru.",
+      },
+      {
+        question: "Unde filmăm?",
+        answer:
+          "La tine, în locul în care se vede cel mai bine ce faci. Scenariul și lista de cadre le pregătim înainte.",
+      },
+      {
+        question: "Pot filma singur, cu telefonul?",
+        answer:
+          "Da. Multe clipuri care funcționează sunt filmate așa. Îți dăm ghidul de cadre, iar montajul îl facem noi.",
+      },
+      {
+        question: "În ce formate primesc clipurile?",
+        answer: "Vertical, pătrat și orizontal: 9:16, 1:1 și 16:9, pentru fiecare platformă.",
+      },
+      {
+        question: "Câte revizii sunt incluse?",
+        answer:
+          "Verifici montajul și discutăm ajustările înainte de publicare. Numărul de runde e scris în ofertă.",
+      },
+      {
+        question: "Cine publică clipurile?",
+        answer: "Noi sau tu, cum stabilim. Nimic nu se publică fără acordul tău.",
+      },
+    ],
   },
 ] as const;
 
-/** Full seven-bar sequence. Used only on the Sistem A.I. river line. */
+/** Full seven-bar sequence. Used on the closing line of the service story. */
 export const barColors = [
   "bg-bar-white",
   "bg-bar-yellow",

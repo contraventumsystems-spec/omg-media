@@ -586,7 +586,7 @@ function FormatSwitch() {
  *   D  video editing, before/after on one frame plus an illustrated timeline
  *   E  delivery formats, a crop outline moving between 16:9, 1:1 and 9:16
  *
- * The brief-to-delivery workflow is its own section below
+ * The brief-to-delivery workflow is its own section, earlier on the page
  * (app/components/process-journey.tsx).
  *
  * Every image is a labelled placeholder until real work is dropped in.
@@ -650,7 +650,8 @@ export function CreativeBento() {
           </h2>
           <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
             Filmări, ședințe foto, design grafic și editare video, de la idee la
-            materialele finale.
+            materialele finale, ca brandul să arate la fel în reclamă, pe site
+            și pe telefon.
           </p>
         </header>
 

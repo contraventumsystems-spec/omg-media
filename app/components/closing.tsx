@@ -11,8 +11,8 @@ export function Closing() {
         </h2>
         {/* 16px under the heading, then 32px down to the action. */}
         <p className="type-lead mt-4 text-platinum">
-          Trimite-ne adresa site-ului sau numele firmei. Îți spunem de unde
-          merită să începi.
+          Spune-ne site-ul sau numele firmei. Ne uităm la ce ai deja și îți
+          spunem ce merită făcut mai întâi.
         </p>
         <a
           href={whatsappHref()}
