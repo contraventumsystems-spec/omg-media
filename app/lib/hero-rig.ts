@@ -12,7 +12,8 @@ import gsap from "gsap"
  *   camera   opening shot, whole pile, then down to the lower shot
  *   screens  the bar screens tune in, top of the pile first
  *   burst    the pile flies apart, hangs in space, then comes back together
- *   veil     the floor pool fades out for that flight, and the brush strokes take its place
+ *   veil     the floor pool fades out for that flight, and the signal bars take its place;
+ *            as the sets land the bars widen until they fill the frame
  *   settle   everything comes to rest before the next section
  */
 
@@ -39,8 +40,10 @@ export type HeroRig = {
    * 1 again once they have landed.
    */
   puddle: number
-  /** Brush strokes that stand in for the pool. 0 outside the burst, 1 while it hangs. */
+  /** Signal bars that stand in for the pool. 0 outside the burst, 1 while it hangs. */
   stroke: number
+  /** The bars leave their sets and widen into seven full-height bars. 0 tied to the sets, 1 the frame is covered. */
+  wipe: number
   /** 0 while the beat plays, 1 once it has come to rest. */
   settle: number
   streams: StreamRig[]
@@ -57,6 +60,7 @@ export function createHeroRig(): HeroRig {
     burst: 0,
     puddle: 1,
     stroke: 0,
+    wipe: 0,
     settle: 0,
     streams: Array.from({ length: MAX_STREAMS }, restStream),
   }
@@ -70,6 +74,7 @@ export function createSettledRig(): HeroRig {
     burst: 1,
     puddle: 1,
     stroke: 0,
+    wipe: 0,
     settle: 1,
     streams: Array.from({ length: MAX_STREAMS }, () => ({
       tune: 1,
@@ -114,6 +119,14 @@ export const HERO_BEAT = {
   /** Everything has landed; from `settleEnd` the scene holds still until the hero lets go. */
   settleStart: 0.881,
   settleEnd: 0.949,
+  /**
+   * The signal bars widen from `wipeStart` and cover the frame at `wipeEnd`, where
+   * the channel change takes over and cuts to the services. At `wipeClear`, which
+   * a scroll never shows, they are put away so the later beats get a clean canvas.
+   */
+  wipeStart: 0.875,
+  wipeEnd: 0.94,
+  wipeClear: 0.985,
 } as const
 
 /** Shares of the burst spent flying out and coming back. The sets hang in space in between. */
@@ -216,8 +229,9 @@ function burstTrack(rig: HeroRig) {
 
 /**
  * Crossfade on the burst window. The pool is gone once the sets have lifted and
- * back once they have landed; the strokes fill the gap. `immediateRender` stays
- * off so the return tween does not paint its start values at time zero.
+ * back once they have landed; the bars fill the gap, then widen over the landing
+ * and stay until `wipeClear`. `immediateRender` stays off so the return tweens
+ * do not paint their start values at time zero.
  */
 function veilTrack(rig: HeroRig) {
   const span = HERO_BEAT.burstEnd - HERO_BEAT.burstStart
@@ -245,9 +259,26 @@ function veilTrack(rig: HeroRig) {
     )
     .fromTo(
       rig,
+      { wipe: 0 },
+      {
+        wipe: 1,
+        duration: HERO_BEAT.wipeEnd - HERO_BEAT.wipeStart,
+        ease: "none",
+        immediateRender: false,
+      },
+      HERO_BEAT.wipeStart,
+    )
+    .fromTo(
+      rig,
       { stroke: 1 },
-      { stroke: 0, duration: fade, ease, immediateRender: false },
-      HERO_BEAT.burstEnd - fade,
+      { stroke: 0, duration: 0.005, ease: "none", immediateRender: false },
+      HERO_BEAT.wipeClear,
+    )
+    .fromTo(
+      rig,
+      { wipe: 1 },
+      { wipe: 0, duration: 0.005, ease: "none", immediateRender: false },
+      HERO_BEAT.wipeClear,
     )
 }
 

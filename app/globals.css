@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* shadcn/ui: its data-* variants and the tw-animate keyframes its components use. */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /*
  * Page palette. The ground is the warm lamp-black of a 1930s ink-and-paint cel, never
@@ -19,6 +22,83 @@
   --bar-red: #f23a22;
   --bar-violet: #7a45ff;
   color-scheme: dark;
+
+  /*
+   * shadcn/ui tokens (components/ui), mapped onto the ink palette instead of
+   * shadcn's greys. The site is dark only, so there is no .dark override.
+   */
+  --foreground: var(--eggshell);
+  --card: #1b1612;
+  --card-foreground: var(--eggshell);
+  --popover: #1b1612;
+  --popover-foreground: var(--eggshell);
+  --primary: var(--eggshell);
+  --primary-foreground: var(--background);
+  --secondary: #2a231c;
+  --secondary-foreground: var(--eggshell);
+  --muted: #221c16;
+  --muted-foreground: var(--dim);
+  --accent: #2a231c;
+  --accent-foreground: var(--eggshell);
+  --destructive: var(--bar-red);
+  --border: rgb(243 233 210 / 0.1);
+  --input: rgb(243 233 210 / 0.14);
+  --ring: var(--bar-cyan);
+  --chart-1: var(--bar-cyan);
+  --chart-2: var(--bar-magenta);
+  --chart-3: var(--bar-yellow);
+  --chart-4: var(--bar-green);
+  --chart-5: var(--bar-violet);
+  --radius: 1.25rem;
+
+  /*
+   * The bento's paints: the TV bars as the work beat lights them, a touch
+   * softer than the flat --bar-* values above. Used only by the flux bento.
+   */
+  --flux-yellow: #f8d50e;
+  --flux-cyan: #52cbec;
+  --flux-green: #53d54b;
+  --flux-magenta: #e54bc9;
+  --flux-red: #e8401e;
+  --flux-violet: #7d4dfe;
+}
+
+@theme inline {
+  --color-flux-yellow: var(--flux-yellow);
+  --color-flux-cyan: var(--flux-cyan);
+  --color-flux-green: var(--flux-green);
+  --color-flux-magenta: var(--flux-magenta);
+  --color-flux-red: var(--flux-red);
+  --color-flux-violet: var(--flux-violet);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-heading: var(--font-display);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
 @theme inline {
@@ -171,4 +251,124 @@ details[open] > summary .faq-mark {
   background-size:
     100% 100%,
     180px 180px;
+}
+
+/*
+ * Flux bento (app/components/flow-bento.tsx). The cards are shadcn Cards in ink
+ * and paint: a warm cel ground, faint scanlines, and on hover the card lifts off
+ * a hard offset shadow in its own colour, like a sticker on an MTV bumper.
+ */
+.bento-card {
+  --accent: var(--flux-cyan);
+  position: relative;
+  /* A faint wash of the card's paint in the top corner, over the cel ground. */
+  background:
+    radial-gradient(
+      120% 70% at 100% 0%,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #1d1813 0%, #17120e 100%);
+  border: 1px solid rgb(243 233 210 / 0.08);
+  box-shadow: inset 0 1px 0 rgb(243 233 210 / 0.05);
+}
+
+/* Each card wears one TV bar along its top edge. */
+.bento-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.bento-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(243 233 210 / 0.018) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bento-card {
+    /* A small spring: the card overshoots its lift, like a cel on a rubber band. */
+    transition:
+      transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      border-color 180ms;
+  }
+
+  .bento-card:hover {
+    transform: translate(-4px, -4px) rotate(-0.4deg);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(243 233 210 / 0.05),
+      7px 7px 0 var(--accent);
+  }
+}
+
+/*
+ * Touch screens have no hover, so a tap squashes the card instead. The CSS
+ * `scale` property stacks on GSAP's transform, so it never fights the scroll tween.
+ */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  .bento-card {
+    transition: scale 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .bento-card:active {
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+}
+
+/* Big numbers print a hair off register, cyan and magenta either side. */
+.flux-ghost {
+  text-shadow:
+    -1.5px 0 color-mix(in srgb, var(--flux-cyan) 55%, transparent),
+    1.5px 0 color-mix(in srgb, var(--flux-magenta) 55%, transparent);
+}
+
+.flux-bob {
+  animation: flux-bob 2.6s ease-in-out infinite;
+}
+
+@keyframes flux-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+/* The sample-data dot blinks like a REC light. */
+.flux-blink {
+  animation: flux-blink 1.6s steps(1) infinite;
+}
+
+@keyframes flux-blink {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flux-bob,
+  .flux-blink {
+    animation: none;
+  }
 }

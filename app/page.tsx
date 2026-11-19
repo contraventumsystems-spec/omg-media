@@ -1,5 +1,6 @@
 import { ChannelChange } from "@/app/components/channel-change";
 import { Closing } from "@/app/components/closing";
+import { FlowBento } from "@/app/components/flow-bento";
 import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
 import { Hero } from "@/app/components/hero";
@@ -7,7 +8,6 @@ import {
   AiSystem,
   Faq,
   Fit,
-  Process,
   Services,
   Work,
 } from "@/app/components/home-sections";
@@ -24,8 +24,9 @@ export default function Home() {
         <main>
           <Hero />
           <Services />
+
           <Work />
-          <Process />
+          <FlowBento />
           <AiSystem />
           <Fit />
           <Faq />

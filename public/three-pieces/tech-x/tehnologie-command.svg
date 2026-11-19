@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <g data-terminal-command="" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
+    <g data-terminal-log="" stroke="#1f6e36" stroke-width="24">
+      <path data-log="" d="M300 250H470"/>
+      <path data-log="" d="M500 250H590"/>
+      <path data-log="" d="M620 250H800"/>
+    </g>
+    <path data-ghost="" d="M300 320L440 430L300 540" stroke="#1ec8eb" stroke-width="40" opacity="0"/>
+    <path data-ghost="" d="M300 320L440 430L300 540" stroke="#ee44c6" stroke-width="40" opacity="0"/>
+    <path data-prompt="" d="M300 320L440 430L300 540" stroke="#f8f3df" stroke-width="40"/>
+    <path data-cursor="" d="M500 540H700" stroke="#58e65d" stroke-width="44"/>
+  </g>
+</svg>

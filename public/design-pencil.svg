@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <title>Design — pencil</title>
+  <defs>
+    <path data-morph-start="" d="M7 11h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2Z"/>
+  </defs>
+  <path data-morph-target="" d="M4.13 19.43 5.7 13.7l9.56-9.55a1.55 1.55 0 0 1 2.2 0l2.4 2.4a1.55 1.55 0 0 1 0 2.2l-.85.85-1.24-1.24-.83.83 1.24 1.24-8.11 8.11-5.35 1.6a.48.48 0 0 1-.59-.71Z"/>
+</svg>

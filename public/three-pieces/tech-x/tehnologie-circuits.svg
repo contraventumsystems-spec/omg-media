@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <g stroke="#0c160f" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter">
+    <g data-circuit="upper-left">
+      <path data-trace="" d="M136 256H156L192 292" fill="none"/>
+      <circle data-node="" cx="120" cy="256" r="16" fill="#f8f3df" stroke-width="10"/>
+    </g>
+    <g data-circuit="lower-left">
+      <path data-trace="" d="M136 560H156L192 524" fill="none"/>
+      <circle data-node="" cx="120" cy="560" r="16" fill="#f8f3df" stroke-width="10"/>
+    </g>
+    <g data-circuit="upper-right">
+      <path data-trace="" d="M996 292L1024 256H1032" fill="none"/>
+      <circle data-node="" cx="1048" cy="256" r="16" fill="#f8f3df" stroke-width="10"/>
+    </g>
+    <g data-circuit="lower-right">
+      <path data-trace="" d="M996 544L1024 576H1032" fill="none"/>
+      <circle data-node="" cx="1048" cy="576" r="16" fill="#f8f3df" stroke-width="10"/>
+    </g>
+  </g>
+</svg>

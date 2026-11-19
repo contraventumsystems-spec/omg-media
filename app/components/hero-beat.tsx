@@ -103,7 +103,13 @@ export function HeroBeat() {
           if (bar) bar.style.transform = `scaleX(${progress})`;
           /* The hint and the readout share the bottom edge: one leaves as the other arrives. */
           if (hint) hint.style.opacity = String(Math.max(0, 1 - progress / 0.04));
-          if (readout) readout.style.opacity = String(Math.min(1, Math.max(0, (progress - 0.04) / 0.06)));
+          /* The readout steps out as the signal bars widen over the frame, in the same seven steps. */
+          const covered = Math.floor(heroRig.wipe * 7 + 0.001) / 7;
+          if (readout) {
+            readout.style.opacity = String(
+              Math.min(1, Math.max(0, (progress - 0.04) / 0.06)) * (1 - covered),
+            );
+          }
           const next = stageAt(progress);
           if (next !== stage) {
             stage = next;

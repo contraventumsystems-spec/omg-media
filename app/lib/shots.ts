@@ -116,16 +116,6 @@ export const shots = {
       fill: [0.92, 0.5],
       pedestal: 0.24,
     },
-    /** Same tilt, slid so the hole sits in the top third above the list. */
-    SHOT_3B: {
-      target: [0, 0, 0],
-      azimuth: 0,
-      elevation: 35,
-      fov: 45,
-      frame: [1, 1],
-      fill: [0.92, 0.5],
-      pedestal: -0.5,
-    },
     /** Still frame for reduced motion: the pile under the copy. */
     REST: {
       target: PILE.centre,
@@ -187,15 +177,6 @@ export const shots = {
       frame: [1, 1],
       fill: [0.44, 0.6],
       pedestal: 0.16,
-    },
-    SHOT_3B: {
-      target: [0, 0, 0],
-      azimuth: 0,
-      elevation: 35,
-      fov: 35,
-      frame: [1, 1],
-      fill: [0.44, 0.6],
-      pedestal: -0.46,
     },
     REST: {
       target: PILE.centre,

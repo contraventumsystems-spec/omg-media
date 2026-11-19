@@ -11,21 +11,21 @@ export const site = {
   title: "Idei care prind formă — strategie, design și tehnologie",
   description:
     "Website-uri, reclame și sisteme A.I. pentru firme care vor mai multe cereri. Punem strategia, designul și tehnologia în aceeași direcție.",
-} as const
+} as const;
 
 export const defaultWhatsappText =
-  "Bună. Vreau să vedem de unde merită să încep."
+  "Bună. Vreau să vedem de unde merită să încep.";
 
 /** Builds a wa.me link. Extra text is appended for the evaluation form. */
 export function whatsappHref(text: string = defaultWhatsappText) {
-  return `https://wa.me/${site.phone}?text=${encodeURIComponent(text)}`
+  return `https://wa.me/${site.phone}?text=${encodeURIComponent(text)}`;
 }
 
 export const nav = [
   { href: "#servicii", label: "Servicii" },
   { href: "#proces", label: "Cum lucrăm" },
   { href: "#despre", label: "Despre" },
-] as const
+] as const;
 
 export const services = [
   {
@@ -61,7 +61,7 @@ export const services = [
     rule: "bg-bar-green",
     items: ["Website", "Magazin online", "Sistem A.I."],
   },
-] as const
+] as const;
 
 /** Placeholder channels until the work clips and project pages exist. One bar colour each. */
 export const works = [
@@ -93,7 +93,7 @@ export const works = [
     type: "Brand",
     result: "Exemplu demonstrativ",
   },
-] as const
+] as const;
 
 /** SVG slots. The ink drawings replace the empty frames later. */
 export const processSteps = [
@@ -112,13 +112,13 @@ export const processSteps = [
     slot: "Turn ON AIR",
     body: "Testăm pe telefon și verificăm dacă cererile ajung unde trebuie.",
   },
-] as const
+] as const;
 
 export const outcomes = [
   "Răspuns în secunde, nu în ore.",
   "Zero cereri pierdute.",
   "Mai puțin timp la telefon, mai mult pe lucrări.",
-] as const
+] as const;
 
 export const audiences = [
   { label: "Acoperișuri și construcții", accent: "border-bar-cyan" },
@@ -126,7 +126,7 @@ export const audiences = [
   { label: "Clinici și saloane", accent: "border-bar-green" },
   { label: "Renovări și instalații", accent: "border-bar-yellow" },
   { label: "Magazine online", accent: "border-bar-violet" },
-] as const
+] as const;
 
 /**
  * Draft answers so the accordion has real sentences.
@@ -135,8 +135,7 @@ export const audiences = [
 export const faqs = [
   {
     question: "Poți folosi site-ul existent?",
-    answer:
-      "Da. Pornim de la ce ai deja și schimbăm doar ce nu aduce cereri.",
+    answer: "Da. Pornim de la ce ai deja și schimbăm doar ce nu aduce cereri.",
   },
   {
     question: "Cât costă?",
@@ -150,15 +149,14 @@ export const faqs = [
   },
   {
     question: "Bugetul de reclame e inclus?",
-    answer:
-      "Nu. Bugetul de media îl setezi tu. Noi îl administrăm.",
+    answer: "Nu. Bugetul de media îl setezi tu. Noi îl administrăm.",
   },
   {
     question: "Cât durează?",
     answer:
       "Un site simplu pornește în câteva săptămâni. Îți dăm un termen după evaluare.",
   },
-] as const
+] as const;
 
 /** Full seven-bar sequence. Used only on the Sistem A.I. river line. */
 export const barColors = [
@@ -169,4 +167,4 @@ export const barColors = [
   "bg-bar-magenta",
   "bg-bar-red",
   "bg-bar-violet",
-] as const
+] as const;

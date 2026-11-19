@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <defs>
+    <mask id="design-ink-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="1168" height="784">
+      <path data-ink-guide="" fill="none" stroke="white" stroke-width="34" stroke-linecap="round" d="
+      M304 645 C251 669 257 710 342 710
+      C437 712 512 670 610 632 C708 595 815 592 872 675"/>
+    </mask>
+  </defs>
+  <path data-ink="" mask="url(#design-ink-reveal)" fill="#070508" d="
+    M304 644 C285 654 267 670 277 685
+    C298 711 392 703 466 675 C543 646 601 618 662 607
+    C759 589 843 623 872 675 C823 615 750 602 670 620
+    C604 635 546 668 481 692 C410 719 329 729 289 711
+    C247 692 255 659 304 644 Z"/>
+</svg>

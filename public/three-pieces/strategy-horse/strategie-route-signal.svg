@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <path data-route-track="" d="M290 572H410L510 470H630L730 330H842" stroke="#24415c" stroke-width="26"/>
+    <path data-route-glow="" d="M290 572H410L510 470H630L730 330H842" stroke="#72dfff" stroke-width="46" opacity="0.28"/>
+    <path data-ghost="" d="M290 572H410L510 470H630L730 330H842" stroke="#ee44c6" stroke-width="20" opacity="0"/>
+    <path data-ghost="" d="M290 572H410L510 470H630L730 330H842" stroke="#27d24c" stroke-width="20" opacity="0"/>
+    <path data-route-line="" d="M290 572H410L510 470H630L730 330H842" stroke="#72dfff" stroke-width="20"/>
+  </g>
+  <g data-waypoints="" stroke-width="10">
+    <circle data-waypoint="start" cx="290" cy="572" r="18" fill="#f8f3df" stroke="#0b1626"/>
+    <circle data-waypoint="one" cx="510" cy="470" r="24" fill="#0a1a2e" stroke="#72dfff"/>
+    <circle data-waypoint="two" cx="730" cy="330" r="24" fill="#0a1a2e" stroke="#72dfff"/>
+  </g>
+  <circle data-route-ping="" cx="842" cy="330" r="40" fill="none" stroke="#72dfff" stroke-width="10" opacity="0"/>
+  <g data-route-destination="">
+    <circle cx="842" cy="330" r="40" fill="#0a1a2e" stroke="#f8f3df" stroke-width="10"/>
+    <circle cx="842" cy="330" r="13" fill="#72dfff"/>
+    <path d="M842 266V282 M842 378V394 M778 330H794 M890 330H906" fill="none" stroke="#f8f3df" stroke-width="8"/>
+  </g>
+  <circle data-route-pulse="" cx="290" cy="572" r="14" opacity="0" fill="#f8f3df"/>
+</svg>

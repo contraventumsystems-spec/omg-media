@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <g data-bezier-strokes="" fill="none" stroke-linecap="butt">
+    <path data-bezier-glow="" d="M330 560C400 580 440 500 510 400C576 306 640 330 700 400C766 477 846 480 890 330" stroke="#fd79dc" stroke-width="48" opacity="0.28"/>
+    <path data-ghost="" d="M330 560C400 580 440 500 510 400C576 306 640 330 700 400C766 477 846 480 890 330" stroke="#1ec8eb" stroke-width="22" opacity="0"/>
+    <path data-ghost="" d="M330 560C400 580 440 500 510 400C576 306 640 330 700 400C766 477 846 480 890 330" stroke="#27d24c" stroke-width="22" opacity="0"/>
+    <path data-bezier-curve="" d="M330 560C400 580 440 500 510 400C576 306 640 330 700 400C766 477 846 480 890 330" stroke="#fd79dc" stroke-width="22"/>
+  </g>
+  <g data-bezier-handles="" fill="#f8f3df" stroke="#f8f3df" stroke-width="7">
+    <g data-handle="one">
+      <path d="M447 490L573 310"/>
+      <circle cx="447" cy="490" r="9"/>
+      <circle cx="573" cy="310" r="9"/>
+    </g>
+    <g data-handle="two">
+      <path d="M646 337L754 463"/>
+      <circle cx="646" cy="337" r="9"/>
+      <circle cx="754" cy="463" r="9"/>
+    </g>
+  </g>
+  <g data-bezier-anchors="" fill="#1f0c26" stroke="#f8f3df" stroke-width="9" stroke-linejoin="miter">
+    <rect data-anchor="start" x="312" y="542" width="36" height="36"/>
+    <rect data-anchor="one" x="492" y="382" width="36" height="36"/>
+    <rect data-anchor="two" x="682" y="382" width="36" height="36"/>
+    <rect data-anchor="end" x="872" y="312" width="36" height="36"/>
+  </g>
+</svg>

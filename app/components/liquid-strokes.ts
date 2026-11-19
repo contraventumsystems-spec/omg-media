@@ -1,134 +1,187 @@
 import * as THREE from "three"
-import { LIQUID_HEX } from "@/app/lib/bars"
+import { LIQUID_HEX, PAPER_HEX } from "@/app/lib/bars"
+import { PILE } from "@/app/lib/shots"
 
 /**
- * Seven brush strokes, one per paint colour, that stand in for the floor pool
- * while the sets are apart. Nothing here runs on the clock. Position, curl and
- * the wet highlight are functions of the burst progress the hero timeline
- * already scrubs, so a reverse scroll plays the same frames backwards.
+ * Seven signal bars, one per paint colour, that stand in for the floor pool
+ * while the sets are apart. They are the test pattern the screens were showing.
+ * Each bar belongs to one set: it shoots out from behind that set to the top or
+ * the bottom of the frame when the pile bursts, and follows the set as it flies.
+ * The sets are taken left to right, so the colours stay in bar order.
  *
- * Each stroke is one ribbon on the pile's root, not a child of a set: the frame
- * loop reads where that set is and orbits it. The sets themselves are not moved.
+ * They are drawn in the language of the channel change that ends the hero: flat
+ * colour, hard edges, scanlines, slices torn sideways, and a reveal that climbs
+ * in seven steps instead of fading.
+ *
+ * As the sets land the bars let go of them. In seven steps they move to seven
+ * equal columns, widen and come in front of the pile, until they cover the frame.
+ * That picture is the first frame of the channel change, which takes over from
+ * there and cuts to the services.
+ *
+ * Nothing here runs on the clock. The tears, the reveal and the widening are
+ * functions of values the hero timeline already scrubs, so a reverse scroll
+ * plays the same frames backwards.
  */
 
-/** One ribbon per colour in LIQUID_HEX, in that order. */
+/** One bar per colour in LIQUID_HEX, in that order. */
 const COUNT = LIQUID_HEX.length
-/** Segments along the stroke. The width is a shader taper, so one row is enough. */
-const SEGMENTS = 40
-/**
- * How far a stroke sits from the centre of its set. Far enough that the whole
- * ribbon clears the cabinet; a closer orbit is swallowed by the shell.
- */
-const RADIUS = 5.4
-/** Pulled toward the camera so the mark sits in front of the glass, not inside it. */
-const TOWARD_CAMERA = 2.4
+/** The bars stand this far behind the centre of the pile, between the sets and the wall. */
+const BEHIND = 3
+/** A bar runs this far past the edge of the frame, in half viewport heights, so its end is never seen. */
+const OVERSHOOT = 1.08
+/** Width of one bar, as a share of the viewport width, and its floor as a share of the height. */
+const BAR_WIDTH = 0.05
+const BAR_WIDTH_MIN = 0.04
+/** The quad is this many bar widths wide, which leaves room for a slice to tear sideways. */
+const QUAD = 3
+/** Height of one slice, as a share of the viewport height. */
+const SLICE = 0.03
+/** How many times the tears re-deal across the burst. */
+const TICKS = 18
 
-const STROKE_VERTEX = /* glsl */ `
-  uniform float uFlow;
-  uniform float uSeed;
+const BAR_VERTEX = /* glsl */ `
   varying vec2 vUv;
 
   void main() {
     vUv = uv;
-    float along = uv.x;
-    /* A long bow, plus a curl that travels with the scroll, so the stroke is never a straight bar. */
-    float spine = sin(along * 3.14159265) * 0.28;
-    spine += sin(along * 6.2831853 + uSeed + uFlow * 6.2831853) * 0.08;
-    /* A brush is thick through the middle and comes to a point at both ends. */
-    float taper = pow(max(sin(along * 3.14159265), 0.0), 0.65);
-    vec3 p = vec3(position.x, spine + position.y * mix(0.12, 1.0, taper), 0.0);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `
 
-const STROKE_FRAGMENT = /* glsl */ `
+const BAR_FRAGMENT = /* glsl */ `
   uniform vec3 uColor;
-  uniform float uOpacity;
+  uniform vec3 uPaper;
+  uniform float uReveal;
   uniform float uFlow;
   uniform float uSeed;
+  uniform float uRows;
+  uniform float uBase;
+  uniform float uTear;
+  uniform float uUp;
   varying vec2 vUv;
 
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
   void main() {
-    float across = abs(vUv.y - 0.5) * 2.0;
-    /* The edge wanders along the stroke, so it reads as bristles and not a capsule. */
-    float wander = 0.14 * sin(vUv.x * 18.0 + uSeed * 6.0) + 0.07 * sin(vUv.x * 7.0 + uFlow * 5.0);
-    /* Soft outer edge, solid body: wet paint rather than a hairline. */
-    float ink = 1.0 - smoothstep(0.78 + wander, 1.15 + wander, across);
-    /* Both tips fade out. The geometry taper alone would end in a cut. */
-    float tip = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
-    float core = smoothstep(0.7, 0.0, across);
-    vec3 color = uColor * mix(0.72, 1.0, core);
-    /* One wet ridge runs the length of the stroke as the burst progresses. */
-    float ridge = exp(-pow((vUv.x - uFlow) * 4.0, 2.0)) * (1.0 - across);
-    color = mix(color, vec3(1.0), ridge * 0.42);
-    float alpha = ink * tip * uOpacity;
-    if (alpha < 0.02) discard;
-    gl_FragColor = vec4(color, alpha);
+    /* The bar grows from one end in seven hard steps, like the wipe of the cut. */
+    float grown = floor(uReveal * 7.0 + 0.001) / 7.0;
+    float along = mix(1.0 - vUv.y, vUv.y, uUp);
+    if (along > grown) discard;
+
+    /* Rows are counted from the middle of the frame, so a tear stays put while its set moves. */
+    float row = floor(vUv.y * uRows + uBase);
+    /* Tears hold for a stretch of scroll and then re-deal, so they step and never slide. */
+    float tick = floor(uFlow * ${TICKS.toFixed(1)});
+    /* Slices tear in blocks of three, so a tear reads as a band and not as noise. */
+    float block = floor(row / 3.0);
+    float torn = step(0.7, hash21(vec2(block + uSeed * 17.0, tick)));
+    /* uTear runs to zero as the bars widen: the last step is seven clean, solid bars. */
+    float shift = torn * (hash21(vec2(block * 1.9 + uSeed, tick + 5.0)) - 0.5) * 1.7 * uTear;
+    /* A few single slices drop out and leave a gap. */
+    if (hash21(vec2(row + uSeed * 31.0, tick + 11.0)) < 0.07 * uTear) discard;
+
+    float across = (vUv.x - 0.5) * ${QUAD.toFixed(1)} - shift;
+    if (abs(across) > 0.5) discard;
+
+    /* Now and then a slice shows the white bar the paint replaced. */
+    float white = step(1.0 - 0.045 * uTear, hash21(vec2(row * 0.7 + uSeed * 3.0, tick + 23.0)));
+    vec3 color = mix(uColor, uPaper, white);
+    /* Scanlines, two dark pixels in five, the same as the cut. */
+    color *= mix(1.0, 0.7, step(fract(gl_FragCoord.y / 5.0), 0.4));
+    gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
   }
 `
 
-export type StrokeAnchor = { pivot: THREE.Object3D }
+export type BarAnchor = {
+  pivot: THREE.Object3D
+  /** Centre of the set with the pile stacked. */
+  rest: THREE.Vector3
+}
 
 export type LiquidStrokes = {
-  /** Places the ribbons for this frame. Hides them when `opacity` is ~0. */
+  /**
+   * Places the bars for this frame. Hides them when `reveal` is ~0.
+   * `wipe` runs 0 to 1 as the bars leave the sets and cover the frame.
+   */
   update: (
-    tvs: readonly StrokeAnchor[],
+    tvs: readonly BarAnchor[],
     camera: THREE.Camera,
     burst: number,
-    opacity: number,
+    reveal: number,
+    wipe: number,
   ) => void
 }
 
-/** Scratch basis. Reused every frame so the orbit allocates nothing. */
+/** Scratch basis. Reused every frame so the layout allocates nothing. */
 const forward = new THREE.Vector3()
 const right = new THREE.Vector3()
 const up = new THREE.Vector3()
+const anchor = new THREE.Vector3()
+const reach = new THREE.Vector3()
 
-/** One shared ribbon. Colour, seed and flow are per material. */
-function strokeGeometry() {
-  return new THREE.PlaneGeometry(1, 0.46, SEGMENTS, 1)
-}
-
-function strokeMaterial(index: number) {
+function barMaterial(index: number) {
   return new THREE.ShaderMaterial({
-    name: "LiquidStroke",
-    vertexShader: STROKE_VERTEX,
-    fragmentShader: STROKE_FRAGMENT,
+    name: "SignalBar",
+    vertexShader: BAR_VERTEX,
+    fragmentShader: BAR_FRAGMENT,
     side: THREE.DoubleSide,
+    /* Hard edges only, cut with discard. In the late queue so the widened bars can draw over everything. */
     transparent: true,
     depthWrite: false,
     toneMapped: false,
     uniforms: {
       uColor: { value: new THREE.Color(LIQUID_HEX[index]) },
-      uOpacity: { value: 0 },
+      uPaper: { value: new THREE.Color(PAPER_HEX) },
+      uReveal: { value: 0 },
       uFlow: { value: 0 },
-      /* Offsets the bristle wobble so the seven strokes are not the same mark. */
-      uSeed: { value: index * 1.37 },
+      /* Offsets the tears so the seven bars do not tear in the same rows. */
+      uSeed: { value: index * 1.37 + 0.5 },
+      uRows: { value: 1 },
+      uBase: { value: 0 },
+      uTear: { value: 1 },
+      /* Neighbours shoot to opposite edges of the frame. */
+      uUp: { value: index % 2 },
     },
   })
 }
 
-/** Adds the ribbons to `parent` and returns the per-frame update. Hidden until the burst. */
+/** Adds the bars to `parent` and returns the per-frame update. Hidden until the burst. */
 export function createLiquidStrokes(parent: THREE.Object3D): LiquidStrokes {
-  const geometry = strokeGeometry()
+  const geometry = new THREE.PlaneGeometry(1, 1)
   const meshes = LIQUID_HEX.map((_, index) => {
-    const mesh = new THREE.Mesh(geometry, strokeMaterial(index))
-    mesh.name = `liquid-stroke-${index}`
+    const mesh = new THREE.Mesh(geometry, barMaterial(index))
+    mesh.name = `signal-bar-${index}`
     mesh.visible = false
-    mesh.renderOrder = 2
-    /* Long enough to read as a brush sweep beside a set, not a speck on the glass. */
-    mesh.scale.setScalar(4.2 + (index % 4) * 0.28)
+    mesh.frustumCulled = false
     parent.add(mesh)
     return mesh
   })
 
-  const update: LiquidStrokes["update"] = (tvs, camera, burst, opacity) => {
-    const shown = opacity > 0.01 && tvs.length > 0
-    if (!shown) {
+  /* The seven sets that carry a bar, left to right on screen, picked once per pile. */
+  let source: readonly BarAnchor[] | null = null
+  let carriers: BarAnchor[] = []
+  const pick = (tvs: readonly BarAnchor[]) => {
+    if (tvs === source) return carriers
+    source = tvs
+    /* Screen-right is -Z, so the largest z is the leftmost set. */
+    const sorted = [...tvs].sort((a, b) => b.rest.z - a.rest.z)
+    const last = sorted.length - 1
+    carriers = LIQUID_HEX.map((_, i) => sorted[last <= 0 ? 0 : Math.round((i * last) / (COUNT - 1))])
+    return carriers
+  }
+
+  const update: LiquidStrokes["update"] = (tvs, camera, burst, reveal, wipe) => {
+    const lens = camera as THREE.PerspectiveCamera
+    if (reveal <= 0.01 || tvs.length === 0 || !lens.isPerspectiveCamera) {
       for (const mesh of meshes) mesh.visible = false
       return
     }
+    const sets = pick(tvs)
 
     /* lookAt() writes the quaternion before the world matrix, so refresh it. */
     camera.updateMatrixWorld()
@@ -136,25 +189,54 @@ export function createLiquidStrokes(parent: THREE.Object3D): LiquidStrokes {
     right.setFromMatrixColumn(camera.matrixWorld, 0)
     up.setFromMatrixColumn(camera.matrixWorld, 1)
 
-    const last = tvs.length - 1
+    /* A plane facing the camera, behind the pile. Sizes below are shares of the viewport at that depth. */
+    anchor.set(...PILE.centre).addScaledVector(forward, BEHIND)
+    const depth = reach.copy(anchor).sub(camera.position).dot(forward)
+    const halfH = depth * Math.tan(THREE.MathUtils.degToRad(lens.fov) / 2)
+    const halfW = halfH * lens.aspect
+    /* Middle of the view at that depth. Everything below is laid out around it. */
+    anchor.copy(camera.position).addScaledVector(forward, depth)
+
+    const width = Math.max(BAR_WIDTH * halfW * 2, BAR_WIDTH_MIN * halfH * 2)
+    const slice = SLICE * halfH * 2
+    /* The widening moves in the seven steps of the wipe, never smoothly. */
+    const cover = Math.floor(Math.min(1, Math.max(0, wipe)) * 7 + 0.001) / 7
+    const column = (halfW * 2) / COUNT
+    const edge = halfH * OVERSHOOT
+
     for (let i = 0; i < COUNT; i++) {
       const mesh = meshes[i]
-      const tv = tvs[last === 0 ? 0 : Math.round((i * last) / (COUNT - 1))]
-      const phase = (i / COUNT) * Math.PI * 2
-      /* Half a turn across the burst: a slow orbit that reverses with the scroll. */
-      const angle = phase + burst * Math.PI
-      const radius = (RADIUS + (i % 3) * 0.45) * (1 + 0.06 * Math.sin(burst * Math.PI * 2 + phase))
       const material = mesh.material as THREE.ShaderMaterial
 
-      mesh.position.copy(tv.pivot.position)
-      mesh.position.addScaledVector(right, Math.cos(angle) * radius)
-      mesh.position.addScaledVector(up, Math.sin(angle) * radius * 0.82)
-      mesh.position.addScaledVector(forward, -TOWARD_CAMERA)
+      /* Where the set is on screen, carried back to the plane of the bars. */
+      reach.copy(sets[i].pivot.position).sub(camera.position)
+      const away = Math.max(reach.dot(forward), 0.001)
+      const setX = (reach.dot(right) / away) * depth
+      const setY = (reach.dot(up) / away) * depth
+
+      /* Tied: from the set to one edge of the frame. Covering: the whole height of its column. */
+      const far = i % 2 === 1 ? edge : -edge
+      const low = THREE.MathUtils.lerp(Math.min(setY, far), -edge, cover)
+      const high = THREE.MathUtils.lerp(Math.max(setY, far), edge, cover)
+      const across = THREE.MathUtils.lerp(setX, -halfW + (i + 0.5) * column, cover)
+      const wide = THREE.MathUtils.lerp(width, column * 1.02, cover)
+      const height = Math.max(high - low, 0.0001)
+
+      mesh.position
+        .copy(anchor)
+        .addScaledVector(right, across)
+        .addScaledVector(up, (low + high) / 2)
       mesh.quaternion.copy(camera.quaternion)
-      mesh.rotateZ(phase * 0.35 + burst * 0.5)
+      mesh.scale.set(wide * QUAD, height, 1)
       mesh.visible = true
-      material.uniforms.uOpacity.value = opacity
+      /* Behind the sets while tied to them; over the whole scene from the first step of the widening. */
+      material.depthTest = cover === 0
+      mesh.renderOrder = cover === 0 ? 0 : 999
+      material.uniforms.uReveal.value = reveal
       material.uniforms.uFlow.value = burst
+      material.uniforms.uRows.value = height / slice
+      material.uniforms.uBase.value = low / slice
+      material.uniforms.uTear.value = 1 - cover
     }
   }
 

@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
-import { BAR_HEX } from "@/app/lib/bars";
+import { BAR_HEX, LIQUID_HEX } from "@/app/lib/bars";
 import { HERO_BEAT } from "@/app/lib/hero-rig";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -12,10 +12,19 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const EVENT = "channel-change";
 /** Never more than one burst per screen of scrolling. */
 const COOLDOWN_MS = 900;
-/** Hero progress past which a scroll down fires the cut to the services. The pile rests from settleEnd. */
-const SNAP_GATE = HERO_BEAT.settleEnd + 0.026;
-/** Scroll input is held this long around the cut, so momentum cannot carry past the landing. */
-const SNAP_LOCK_S = 0.75;
+/** Hero progress past which the cut to the services fires: the signal bars have just covered the frame. */
+const SNAP_GATE = HERO_BEAT.wipeEnd + 0.004;
+/** Where the cut back up lands: the sets are coming home and the bars have not started to widen. */
+const SNAP_BACK = HERO_BEAT.wipeStart - 0.012;
+/** Scroll input is held this long around a cut, so momentum cannot carry past the landing. */
+const LOCK_S = { cut: 0.75, handoff: 0.56 } as const;
+
+/**
+ * burst    the short one, for links and reduced motion
+ * cut      the long one, from the services back up into the hero
+ * handoff  takes over from the hero's own bars, which already cover the frame
+ */
+type Kind = "burst" | "cut" | "handoff";
 
 /**
  * Plays the burst. `onCovered` runs while the screen is hidden by static,
@@ -81,15 +90,27 @@ export function ChannelChange() {
         });
       };
 
+      /* The two cuts use the paint colours of the hero's bars; everything else the seven bars of the brand. */
+      const paint = (colors: readonly string[]) => {
+        Array.from(wipe.children).forEach((bar, index) => {
+          (bar as HTMLElement).style.background = colors[index];
+        });
+      };
+
       /**
-       * `force` skips the cooldown. `cut` plays the long version used between the
-       * hero and the services: 0 to 140 ms torn static, 140 to 320 ms the bar wipe,
-       * 320 to 520 ms the bars hold and jolt, 520 to 720 ms the whole picture
-       * wipes off in seven steps and uncovers the page behind it.
+       * Only the short burst has a cooldown.
+       *
+       * cut: 0 to 140 ms torn static, 140 to 320 ms the bar wipe, 320 to 520 ms
+       * the bars hold and jolt, 520 to 720 ms the whole picture wipes off in seven
+       * steps and uncovers the page behind it.
+       *
+       * handoff: the canvas already shows seven full bars, so this one starts on
+       * the same picture with no static and no wipe in. 0 to 300 ms the bars jolt,
+       * 300 to 500 ms they wipe off.
        */
-      const play = (onCovered?: () => void, force = false, cut = false) => {
+      const play = (onCovered?: () => void, kind: Kind = "burst") => {
         const now = performance.now();
-        if (playing || (!force && now - lastRun < COOLDOWN_MS)) {
+        if (playing || (kind === "burst" && now - lastRun < COOLDOWN_MS)) {
           onCovered?.();
           return;
         }
@@ -101,6 +122,7 @@ export function ChannelChange() {
           gsap.set(overlay, { autoAlpha: 0, clipPath: "none" });
           gsap.set(lines, { autoAlpha: 0 });
           gsap.set(wipe, { x: 0, skewX: 0 });
+          paint(BAR_HEX);
           playing = false;
         };
 
@@ -120,7 +142,24 @@ export function ChannelChange() {
         canvas.height = Math.max(1, Math.min(Math.ceil(window.innerHeight / 4), 240));
         drawNoise();
 
-        if (cut) {
+        if (kind === "handoff") {
+          paint(LIQUID_HEX);
+          const timeline = gsap
+            .timeline({ onComplete: done })
+            .set(overlay, { autoAlpha: 1, clipPath: "inset(0 0 0 0%)" })
+            .set(canvas, { autoAlpha: 0 })
+            .set(lines, { autoAlpha: 1 })
+            .set(wipe, { autoAlpha: 1, clipPath: "inset(0 0% 0 0)" })
+            .call(() => onCovered?.(), undefined, 0.03)
+            .set(wipe, { x: 0, skewX: 0 }, 0.3)
+            .set(lines, { autoAlpha: 0 }, 0.3)
+            .to(overlay, { clipPath: "inset(0 0 0 100%)", duration: 0.2, ease: "steps(7)" }, 0.3);
+          [0.08, 0.15, 0.22].forEach((at) => timeline.call(jolt, undefined, at));
+          return;
+        }
+
+        if (kind === "cut") {
+          paint(LIQUID_HEX);
           const timeline = gsap
             .timeline({ onComplete: done })
             .set(overlay, { autoAlpha: 1, clipPath: "inset(0 0 0 0%)" })
@@ -191,11 +230,13 @@ export function ChannelChange() {
       });
 
       /*
-       * The cut between the hero and the services. Between the resting pile and
-       * the services heading lie about 114svh of scroll that only show the camera
-       * travelling. A trigger spans that stretch: entering it from above plays the
-       * burst and jumps to the heading, entering it from below jumps back to the
-       * resting pile. Either way the stretch itself is never seen.
+       * The cut between the hero and the services. The hero ends with its signal
+       * bars widening until they cover the frame. From there to the services
+       * heading lie about 115svh of scroll that have nothing to show. A trigger
+       * spans that stretch: entering it from above hands the full bars over to
+       * this overlay and jumps to the heading; entering it from below plays the
+       * long cut and jumps back to where the sets are still coming home.
+       * Either way the stretch itself is never seen.
        */
       media.add("(prefers-reduced-motion: no-preference)", () => {
         if (!hero || !services) return;
@@ -203,16 +244,16 @@ export function ChannelChange() {
         const pageTop = (element: HTMLElement) =>
           element.getBoundingClientRect().top + window.scrollY;
         const travel = () => hero.offsetHeight - window.innerHeight;
-        /* Where the pile has just come to rest, and the upward cut lands. */
-        const rest = () => Math.floor(pageTop(hero) + travel() * HERO_BEAT.settleEnd);
-        /* A little further down, so the finished pile holds before the cut fires. */
+        /* Where the upward cut lands. */
+        const back = () => Math.floor(pageTop(hero) + travel() * SNAP_BACK);
+        /* Where the hero's bars have covered the frame and the downward cut fires. */
         const gate = () => Math.ceil(pageTop(hero) + travel() * SNAP_GATE);
         /* Services top at the viewport top: the heading sits in its sticky place. */
         const landing = () => Math.ceil(pageTop(services));
 
         let unlock: (() => void) | null = null;
 
-        const cut = (to: () => number) => {
+        const cut = (to: () => number, kind: "cut" | "handoff") => {
           if (unlock) return;
           /* Until the static covers the screen the page stays where it is, then at the landing. */
           let target = window.scrollY;
@@ -225,7 +266,7 @@ export function ChannelChange() {
           window.addEventListener("scroll", hold);
           window.addEventListener("wheel", block, { passive: false });
           window.addEventListener("touchmove", block, { passive: false });
-          const timer = gsap.delayedCall(SNAP_LOCK_S, () => unlock?.());
+          const timer = gsap.delayedCall(LOCK_S[kind], () => unlock?.());
           unlock = () => {
             timer.kill();
             window.removeEventListener("scroll", hold);
@@ -244,7 +285,7 @@ export function ChannelChange() {
               const tween = trigger.getTween() as gsap.core.Tween | undefined;
               if (typeof tween?.progress === "function") tween.progress(1);
             });
-          }, true, true);
+          }, kind);
         };
 
         ScrollTrigger.create({
@@ -252,10 +293,10 @@ export function ChannelChange() {
           end: () => landing() - 2,
           /* A jump clean over the stretch (an anchor link, the End key) is left alone. */
           onEnter: (self) => {
-            if (self.scroll() < self.end) cut(landing);
+            if (self.scroll() < self.end) cut(landing, "handoff");
           },
           onEnterBack: (self) => {
-            if (self.scroll() > self.start) cut(rest);
+            if (self.scroll() > self.start) cut(back, "cut");
           },
         });
 

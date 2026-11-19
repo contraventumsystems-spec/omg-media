@@ -30,6 +30,8 @@ type SceneState = {
   stage: "main" | "work"
   /** DOM labels for the three streams. The scene moves them to their screens every frame. */
   chips: (HTMLElement | null)[]
+  /** DOM icons drawn on the three stream screens. The scene fits them to the glass every frame. */
+  icons: (HTMLElement | null)[]
   /** A 3D beat is on screen and the tab is visible, so the canvas may draw. */
   active: boolean
   /** prefers-reduced-motion: one still frame of the finished pile, no scrubbing. */
@@ -50,6 +52,7 @@ export const useSceneStore = create<SceneState>(() => ({
   work: 0,
   stage: "main",
   chips: [],
+  icons: [],
   active: true,
   reduced: false,
   lite: false,
@@ -59,7 +62,7 @@ export const useSceneStore = create<SceneState>(() => ({
 
 /**
  * Beat 2 ranges. Push in on the three screens, tilt down to the pool,
- * then slide the river into the top third while the service list comes up.
+ * then lift the floor line to the top, where the service story continues it.
  */
 export const STREAM_BEAT = {
   pushEnd: 0.3,
@@ -78,6 +81,9 @@ export const STREAMS = [
   { id: "design", order: 3, color: "#EE44C6" },
   { id: "tehnologie", order: 2, color: "#27D24C" },
 ] as const
+
+/** Pixel box of a stream photo before the scene scales it onto the glass. 1168×784. */
+export const STREAM_ICON_BOX = { width: 146, height: 98 } as const
 
 /**
  * Beat 3 ranges, on a progress that starts when the work section's top reaches

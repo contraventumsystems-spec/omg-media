@@ -393,8 +393,8 @@ const MELT_FRAGMENT = /* glsl */ `
     float cover = max(mask.r * uZgomot, mask.g * uSemnal) * (1.0 - rollBar);
     color = mix(color, color * 0.38, uSemnal);
     color = mix(color, uPaper, cover);
-    color = crt(color, uv, uSeed, 0.25 * uCrt, 0.3 * uCrt, 0.03 * (1.0 - uSemnal)) * uDim;
-    gl_FragColor = vec4(color, 1.0);
+    color = crt(color, uv, uSeed, 0.25 * uCrt, 0.3 * uCrt, 0.03 * (1.0 - uSemnal));
+    gl_FragColor = vec4(color * uDim, 1.0);
     #include <colorspace_fragment>
   }
 `

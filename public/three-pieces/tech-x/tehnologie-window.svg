@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <defs>
+    <pattern id="scan" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="8" fill="#000" opacity="0.2"/>
+    </pattern>
+  </defs>
+  <g data-terminal-window="">
+    <path data-window-shadow="" d="M232 122H976V622L936 662H192V162Z" transform="translate(20 20)" fill="#1b622f"/>
+    <path data-window-body="" d="M232 122H976V622L936 662H192V162Z" fill="#0a1c11"/>
+    <path data-window-scanlines="" d="M232 122H976V622L936 662H192V162Z" fill="url(#scan)"/>
+    <path data-window-header="" d="M232 122H976V186H192V162Z" fill="#f8f3df"/>
+    <path data-window-divider="" d="M192 186H976" fill="none" stroke="#0c160f" stroke-width="10"/>
+    <g data-window-controls="" fill="#0c160f">
+      <rect x="226" y="144" width="22" height="22" fill="#1b622f"/>
+      <rect x="260" y="144" width="22" height="22"/>
+      <rect x="294" y="144" width="22" height="22"/>
+    </g>
+    <g data-window-signal="" fill="#0c160f">
+      <rect x="886" y="158" width="14" height="14"/>
+      <rect x="910" y="148" width="14" height="24"/>
+      <rect x="934" y="138" width="14" height="34"/>
+    </g>
+    <g data-window-brackets="" fill="none" stroke="#58e65d" stroke-width="8" stroke-linecap="square">
+      <path d="M216 240V212H244"/>
+      <path d="M924 212H952V240"/>
+      <path d="M216 610V638H244"/>
+      <path d="M910 638H926L952 612V596"/>
+    </g>
+    <path data-window-frame="" d="M232 122H976V622L936 662H192V162Z" fill="none" stroke="#0c160f" stroke-width="14" stroke-linejoin="miter"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="784" viewBox="0 0 1168 784">
+  <defs>
+    <path data-expression-target="smile" data-part="brow" d="M589 292 C607 279 637 274 662 284 C670 288 673 294 676 301 C667 296 665 293 660 293 C638 290 608 292 591 305 C588 304 586 298 589 292 Z"/>
+    <path data-expression-target="smile" data-part="eye" d="M580 318 C603 308 634 311 663 324 C647 347 620 355 603 341 C593 333 590 327 589 321 L580 318 Z"/>
+    <path data-expression-target="smile" data-part="pupil" d="M595 316 C601 313 613 312 623 313 C624 325 617 333 607 332 C599 331 595 325 595 316 Z"/>
+    <path data-expression-target="smile" data-part="crease" d="M594 339 C599 349 609 354 623 355 C607 355 599 350 594 339 Z"/>
+    <path data-expression-target="smile" data-part="mouth" d="M536 366 C549 374 569 378 589 367 C592 365 594 365 594 368 C587 377 577 382 566 381 C554 381 544 375 536 369 C534 368 534 366 536 366 Z"/>
+  </defs>
+  <g fill="#090806">
+    <path data-face="brow" d="M589 291 C610 287 642 283 664 282 C670 290 675 302 677 311 C669 304 665 300 660 298 C637 300 608 305 591 306 C588 305 586 299 589 291 Z"/>
+    <path data-face="eye" fill="#fffdfa" stroke="#090806" stroke-width="4" stroke-linejoin="round" d="M580 320 C602 321 634 326 663 329 C645 350 618 360 601 344 C590 336 588 328 588 322 L580 320 Z"/>
+    <path data-face="pupil" d="M595 322 C603 322 614 324 623 325 C622 334 614 340 606 339 C600 338 595 331 595 322 Z"/>
+    <path data-face="crease" d="M590 340 C595 351 605 357 620 360 C604 360 594 354 590 340 Z"/>
+    <path data-face="mouth" d="M537 362 C550 359 576 373 590 387 C591 383 593 384 594 390 C593 394 590 391 588 390 C571 376 551 370 536 366 C534 365 535 363 537 362 Z"/>
+  </g>
+</svg>
