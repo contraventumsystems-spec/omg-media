@@ -11,7 +11,7 @@ export function Header() {
         <a
           href="#hero"
           data-channel
-          className="font-display text-lg tracking-[-0.03em] text-eggshell"
+          className="type-nav text-eggshell"
         >
           {site.name}
         </a>
@@ -21,7 +21,7 @@ export function Header() {
               key={item.href}
               href={item.href}
               data-channel
-              className="text-[15px] text-platinum hover:text-eggshell"
+              className="type-nav text-platinum hover:text-eggshell"
             >
               {item.label}
             </a>
@@ -32,7 +32,7 @@ export function Header() {
           target="_blank"
           rel="noopener noreferrer"
           data-cta="header"
-          className="text-[15px] font-medium text-eggshell"
+          className="type-button text-eggshell"
         >
           Hai să vorbim
         </a>
@@ -47,7 +47,7 @@ export function Header() {
             key={item.href}
             href={item.href}
             data-channel
-            className="shrink-0 text-sm text-platinum"
+            className="type-nav shrink-0 text-platinum"
           >
             {item.label}
           </a>

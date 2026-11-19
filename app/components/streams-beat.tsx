@@ -244,7 +244,7 @@ export function StreamsBeat() {
         >
           {/* Anchored by its bottom centre, with a short lead line down to the screen. */}
           <div className="flex -translate-x-1/2 -translate-y-full flex-col items-center">
-            <span className="rounded-full border border-current bg-background/90 px-3 py-1 text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase md:text-xs">
+            <span className="font-mono rounded-full border border-current bg-background/90 px-3 py-1 text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase md:text-xs">
               {LABELS[stream.id]}
             </span>
             <span className="h-3 w-px bg-current md:h-4" />

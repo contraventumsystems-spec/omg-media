@@ -39,13 +39,13 @@ export function Hero() {
         />
         <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col px-5 pt-32 pb-28 md:justify-center md:px-10 md:pt-14">
           <div className="max-w-xl">
-            <p className="flex items-center gap-3 text-xs tracking-[0.14em] text-dim uppercase">
+            <p className="font-mono flex items-center gap-3 text-xs tracking-[0.14em] text-dim uppercase">
               <ArcMark className="arc-sweep h-4 w-7 text-eggshell" />
               Strategie. Design. Tehnologie.
             </p>
             <h1 className="mt-5 font-display text-[2.75rem] leading-[0.95] tracking-[-0.03em] text-eggshell min-[390px]:text-[3.25rem] lg:text-7xl xl:text-8xl">
               <span className="block">Idei care</span>
-              <span className="block font-serif font-normal italic">
+              <span className="block font-serif font-semibold italic">
                 prind formă.
               </span>
             </h1>

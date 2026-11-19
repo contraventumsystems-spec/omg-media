@@ -204,21 +204,18 @@ export function BentoCard({
   );
 }
 
-/** Two-tone title: the subject in paper, the rest in pencil. */
+/** Card title. Weight marks the subject; the rest stays in the same ink. */
 export function Title({ strong, soft }: { strong: string; soft: string }) {
   return (
-    <CardTitle className="text-xl leading-tight font-bold tracking-[-0.02em] text-eggshell md:text-[1.4rem]">
-      {strong} <span className="text-(--accent)">{soft}</span>
+    <CardTitle className="type-title text-balance text-eggshell">
+      {strong} <span className="font-normal">{soft}</span>
     </CardTitle>
   );
 }
 
+/** The line under a card title. */
 export function Lead({ children }: { children: ReactNode }) {
-  return (
-    <CardDescription className="max-w-md text-sm leading-relaxed text-platinum/75">
-      {children}
-    </CardDescription>
-  );
+  return <CardDescription className="type-body text-platinum">{children}</CardDescription>;
 }
 
 /** One labelled row with a bar that grows to its share. */
@@ -345,7 +342,7 @@ function FlowFeed() {
           <li
             key={item}
             className={cn(
-              "flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-sm motion-safe:transition-[background-color,border-color,color] motion-safe:duration-300",
+              "type-body flex items-center gap-3 rounded-2xl border px-3 py-2.5 motion-safe:transition-[background-color,border-color,color] motion-safe:duration-300",
               current
                 ? "border-flux-violet/60 bg-flux-violet/[0.12] text-eggshell"
                 : done
@@ -599,6 +596,8 @@ export function FlowBento() {
    * Labels over bars are HTML, placed from the data. Recharts hides its own
    * labels while a bar animates, and a hover restarts that animation.
    * Both charts pin the y domain to [0, dataMax], so a bar's top is exact.
+   * Those captions keep the margin the chart reserved for them, so they do not
+   * take the metric role, and this pass does not add motion to them.
    */
   const maxVisitors = Math.max(...points.map((item) => item.visitors));
   const maxRevenue = Math.max(...point.channels.map((channel) => channel.revenue));
@@ -633,12 +632,12 @@ export function FlowBento() {
         </svg>
 
         <header className="mx-auto max-w-5xl text-center">
-          <p data-flux-lead className="text-xs tracking-[0.14em] text-dim uppercase">
+          <p data-flux-lead className="type-index text-dim">
             Cum lucrăm
           </p>
           <h2
             data-flux-heading
-            className="mt-5 font-display text-[length:clamp(2.3rem,1.1rem+4.4vw,5.25rem)] leading-[1.04] font-bold tracking-[-0.03em] text-balance text-eggshell"
+            className="type-h2 mt-2 text-balance text-eggshell"
           >
             {headingLead.map((word, index) => (
               <span key={`${word}-${index}`}>
@@ -663,18 +662,16 @@ export function FlowBento() {
               </span>
             </span>
           </h2>
-          <p
-            data-flux-lead
-            className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-platinum md:text-lg"
-          >
+          <p data-flux-lead className="type-lead mx-auto mt-4 text-platinum">
             Plecăm de la o singură cerere și construim tot traseul logic, pe ce a
             funcționat în piață și pe ce a funcționat la tine: de la idee la
             reclamă, la landing page optimizat cu software de ultimă generație.
           </p>
-          <div data-flux-lead className="mt-6 flex justify-center">
+          {/* Sample-data note, kept with the figures below it. */}
+          <div data-flux-lead className="mt-6 flex justify-center md:mt-8">
             <Badge
               variant="outline"
-              className="h-auto max-w-full gap-2 border-eggshell/15 px-3 py-1 text-[11px] tracking-[0.08em] whitespace-normal text-dim uppercase"
+              className="type-note h-auto max-w-full gap-2 border-eggshell/15 px-3 py-1 whitespace-normal text-dim"
             >
               <span className="flux-blink size-1.5 rounded-full bg-flux-red" />
               Date demonstrative · exemplu: firmă de renovări, București
@@ -684,7 +681,7 @@ export function FlowBento() {
 
         <div
           ref={grid}
-          className="mt-14 grid gap-4 md:mt-16 md:grid-cols-2 lg:grid-cols-3"
+          className="mt-3 grid gap-4 md:mt-4 md:grid-cols-2 lg:grid-cols-3"
         >
           {/* The audit: no templates, and the three ad platforms. */}
           <BentoCard accent="var(--flux-yellow)" className="md:col-span-2">
@@ -692,11 +689,12 @@ export function FlowBento() {
               <Badge className="bg-flux-yellow font-bold text-background">
                 Audit complet
               </Badge>
-              <CardTitle className="text-3xl leading-[1.02] font-bold tracking-[-0.03em] text-eggshell md:text-[2.6rem]">
-                Fără șabloane.{" "}
-                <span className="text-dim">Totul pornește de la nișa ta.</span>
+              {/* The one colour accent in this section. */}
+              <CardTitle className="type-title text-balance text-eggshell">
+                Fără șabloane. Totul pornește de la{" "}
+                <span className="text-signal-audit">nișa ta</span>.
               </CardTitle>
-              <CardDescription className="max-w-2xl text-base leading-relaxed text-platinum">
+              <CardDescription className="type-body text-platinum">
                 Facem audit complet pe nișa ta și pe zona în care activezi. Avem
                 KPI și metrici din proiecte care au funcționat, dar restul se
                 construiește în jurul valorilor tale și al clienților pe care îi
@@ -710,7 +708,7 @@ export function FlowBento() {
                     <TabsTrigger
                       key={channel.id}
                       value={channel.id}
-                      className="gap-2 px-2.5 py-1.5 text-sm after:bg-flux-yellow data-active:text-eggshell"
+                      className="type-button gap-2 px-2.5 py-1.5 text-platinum after:bg-flux-yellow data-active:text-eggshell"
                     >
                       <span className="flex -space-x-1">
                         {channel.icons.map((icon) => (
@@ -727,11 +725,11 @@ export function FlowBento() {
                     value={channel.id}
                     className="mt-4 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-300"
                   >
-                    <p className="max-w-2xl text-base leading-relaxed text-eggshell">
+                    <p className="type-body text-platinum">
                       {channel.body}
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 text-xs tracking-[0.12em] text-dim uppercase">
+                      <span className="type-index mr-1 text-dim">
                         Urmărim
                       </span>
                       {channel.kpis.map((kpi) => (
@@ -779,7 +777,7 @@ export function FlowBento() {
                       <TabsTrigger
                         key={item.id}
                         value={item.id}
-                        className="px-2 text-[13px] after:bg-flux-cyan data-active:text-eggshell"
+                        className="type-button px-2 text-platinum after:bg-flux-cyan data-active:text-eggshell"
                       >
                         {item.tab}
                       </TabsTrigger>
@@ -788,8 +786,13 @@ export function FlowBento() {
                 </Tabs>
               </CardAction>
             </CardHeader>
-            <CardContent className="mt-auto">
-              <div className="relative h-48 sm:h-56 md:h-64">
+            <CardContent>
+              {/* The figure and its date sit clear of the chart. */}
+              <p className="type-metric text-eggshell">
+                {formatNumber(point.visitors)}
+              </p>
+              <p className="type-note mt-2 text-dim">{point.label}</p>
+              <div className="relative mt-6 h-48 sm:h-56 md:mt-8 md:h-64">
                 {live ? (
                   <div
                     aria-hidden="true"
@@ -844,7 +847,7 @@ export function FlowBento() {
                   </ChartContainer>
                 ) : null}
               </div>
-              <div className="mt-3 flex justify-between text-xs text-dim">
+              <div className="mt-3 flex justify-between type-note text-dim">
                 {axis.map((label, index) => (
                   <span key={`${label}-${index}`}>{label}</span>
                 ))}
@@ -862,7 +865,7 @@ export function FlowBento() {
               </Lead>
             </CardHeader>
             <CardContent>
-              <p className="flux-ghost font-display text-5xl font-bold tracking-[-0.04em] text-eggshell tabular-nums md:text-[3.5rem]">
+              <p className="type-metric flux-ghost text-eggshell">
                 <Rolling
                   value={point.cost}
                   live={live}
@@ -871,7 +874,7 @@ export function FlowBento() {
               </p>
               <p
                 className={cn(
-                  "mt-2 flex items-center gap-1.5 text-sm",
+                  "type-note mt-2 flex items-center gap-1.5",
                   cheaper ? "text-flux-green" : "text-flux-yellow",
                 )}
               >
@@ -895,7 +898,7 @@ export function FlowBento() {
                 ))}
               </div>
             </CardContent>
-            <CardContent className="mt-auto">
+            <CardContent className="mt-6 md:mt-8">
               <div className="h-28">
                 {live ? (
                   <ChartContainer config={costChart} className="aspect-auto h-full w-full">
@@ -922,7 +925,7 @@ export function FlowBento() {
                   </ChartContainer>
                 ) : null}
               </div>
-              <div className="mt-2 flex justify-between text-xs text-dim">
+              <div className="mt-2 flex justify-between type-note text-dim">
                 <span>{axis[0]}</span>
                 <span>{axis[2]}</span>
               </div>

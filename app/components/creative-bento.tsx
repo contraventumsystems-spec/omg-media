@@ -4,8 +4,6 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  Camera,
-  Clapperboard,
   Maximize,
   Pause,
   Play,
@@ -13,6 +11,15 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  ArtStage,
+  BrandArt,
+  LandscapeScene,
+  OnSetScene,
+  PortraitArt,
+  ProductArt,
+} from "@/app/components/creative-art";
+import { GraphicDesignBoard, LogoBuilder } from "@/app/components/design-specimen";
 import { BentoCard, FLUX_BARS, Lead, Title } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
 import { bentoEntrance, bentoHeadingPop } from "@/app/lib/bento-motion";
@@ -36,13 +43,6 @@ const MEDIA_EVENT = "omg:media-play";
 const HEADING = "Conținut care îți pune brandul în lumină.";
 const PAYOFF_WORDS = 2;
 
-const STEPS = [
-  { title: "Brief", body: "Stabilim ce vrei să comunici și pentru cine." },
-  { title: "Producție", body: "Filmăm și fotografiem după planul stabilit." },
-  { title: "Editare & design", body: "Montaj, culoare, sunet și grafică." },
-  { title: "Livrare", body: "Fișiere gata de publicat, în formatele de care ai nevoie." },
-] as const;
-
 const RATIOS = [
   { id: "16:9", w: 16, h: 9, use: "YouTube, site" },
   { id: "1:1", w: 1, h: 1, use: "Feed" },
@@ -64,7 +64,6 @@ const formatTime = (seconds: number) => {
 function VideoSlot() {
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const reel = useRef<HTMLDivElement>(null);
   const id = useId();
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -113,30 +112,6 @@ function VideoSlot() {
     return () => window.clearInterval(timer);
   }, [live, playing]);
 
-  /* Placeholder picture: the TV bars drift only while playing, never on reduced motion. */
-  useGSAP(
-    () => {
-      if (live || !reel.current) return;
-      const media = gsap.matchMedia();
-      media.add("(prefers-reduced-motion: no-preference)", () => {
-        const drift = gsap.to(reel.current, {
-          xPercent: -50,
-          duration: 6,
-          ease: "none",
-          repeat: -1,
-          paused: true,
-        });
-        return () => drift.kill();
-      });
-    },
-    { scope: frame },
-  );
-  useEffect(() => {
-    if (live || !reel.current) return;
-    const tweens = gsap.getTweensOf(reel.current);
-    tweens.forEach((tween) => (playing ? tween.play() : tween.pause()));
-  }, [live, playing]);
-
   return (
     <div className="flex w-full flex-col items-center gap-3 sm:w-auto">
       <div
@@ -162,25 +137,13 @@ function VideoSlot() {
             ) : null}
           </video>
         ) : (
-          /* Labelled stand-in, so it never reads as finished work. */
-          <div aria-hidden="true" className="absolute inset-0">
-            <div className="absolute inset-x-0 top-0 h-[58%] overflow-hidden opacity-90">
-              <div ref={reel} className="flex h-full w-[200%]">
-                {[...FLUX_BARS, ...FLUX_BARS].map((color, index) => (
-                  <span key={`${color}-${index}`} className={cn("h-full flex-1", color)} />
-                ))}
-              </div>
-              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_55%,#120e0b)]" />
-            </div>
-            {/* Sits above the control bar. */}
-            <div className="absolute inset-x-0 bottom-14 flex flex-col items-center gap-2 px-5 text-center">
-              <Clapperboard className="size-6 text-eggshell/70" />
-              <p className="font-display text-sm font-bold tracking-[0.12em] text-eggshell uppercase">
-                Prezentare video
-              </p>
-              <p className="text-xs text-dim">Placeholder · 9:16 · fișierul vine aici</p>
-            </div>
-          </div>
+          /* Illustrated poster until the real video lands: the reels spin and the slate claps while it "plays". */
+          <ArtStage className="absolute inset-0">
+            <OnSetScene playing={playing} />
+            <span className="font-mono absolute top-3 left-3 rounded-full bg-background/75 px-2.5 py-1 text-[10px] tracking-[0.12em] text-eggshell uppercase">
+              Prezentare · 9:16
+            </span>
+          </ArtStage>
         )}
 
         {/* Scanlines, like every card. */}
@@ -219,7 +182,7 @@ function VideoSlot() {
             {formatTime(time)}
           </span>
           {playing ? (
-            <span className="flex items-center gap-1.5 text-[10px] tracking-[0.12em] uppercase">
+            <span className="font-mono flex items-center gap-1.5 text-[10px] tracking-[0.12em] uppercase">
               <span className="flux-blink size-1.5 rounded-full bg-flux-red" />
               Rulează
             </span>
@@ -259,137 +222,151 @@ function VideoSlot() {
   );
 }
 
-/* --------------------------------------------------------- shared placeholder */
-
-/** A labelled stand-in frame: obviously a slot, never mistaken for finished work. */
-function Placeholder({
-  label,
-  className,
-  tone = "#231d17",
-}: {
-  label: string;
-  className?: string;
-  tone?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "relative flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-eggshell/10 text-center",
-        className,
-      )}
-      style={{
-        background: `linear-gradient(160deg, ${tone} 0%, #17120e 100%)`,
-      }}
-    >
-      <Camera className="size-5 text-eggshell/50" aria-hidden="true" />
-      <span className="px-2 text-[11px] tracking-[0.1em] text-eggshell/70 uppercase">{label}</span>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------- B: photo stack */
 
+/** The three photographs, front first. Each one is a subject from the lead line. */
+const SHOTS = [
+  { label: "Oameni", Art: PortraitArt },
+  { label: "Produse", Art: ProductArt },
+  { label: "Branduri", Art: BrandArt },
+] as const;
+
+/** Deck slots: front, middle, back. */
+const SLOTS = [
+  { x: 0, y: 0, rotation: 0, scale: 1, zIndex: 3 },
+  { x: 24, y: -6, rotation: 7, scale: 0.92, zIndex: 2 },
+  { x: -24, y: -10, rotation: -8, scale: 0.85, zIndex: 1 },
+] as const;
+
+/** Seconds each photograph stays in front while the deck plays. */
+const DEAL_EVERY = 2.6;
+
+const slotTransform = (slot: (typeof SLOTS)[number]) =>
+  `translate(${slot.x}px, ${slot.y}px) rotate(${slot.rotation}deg) scale(${slot.scale})`;
+
+/**
+ * A deck of three photographs. While it is on screen, GSAP deals the front one
+ * off to the side and tucks it in at the back every few seconds, so people,
+ * products and brands take turns. Hover or focus holds the deck; a click,
+ * tap, Enter or Space deals the next one. Reduced motion: no auto-deal, and a
+ * click swaps instantly.
+ */
 function PhotoStack() {
-  const stack = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLButtonElement>(null);
+  const order = useRef<number[]>([0, 1, 2]);
+  const [front, setFront] = useState(0);
 
-  /* Back photographs fan out on hover, focus or tap. Static on reduced motion. */
+  const deal = useCallback(() => {
+    const el = root.current;
+    if (!el) return;
+    const cards = Array.from(el.querySelectorAll<HTMLElement>("[data-photo]"));
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const [out, ...rest] = order.current;
+    const time = (seconds: number) => (still ? 0 : seconds);
+
+    const shuffle = gsap.timeline();
+    /* The front photo is flicked off the top right, then slides in at the back. */
+    shuffle
+      .to(cards[out], { x: 150, y: -34, rotation: 22, duration: time(0.34), ease: "power2.in", overwrite: "auto" })
+      .set(cards[out], { zIndex: 0 })
+      .to(cards[out], { ...SLOTS[2], duration: time(0.55), ease: "back.out(1.7)" });
+    /* The others step forward a slot each. */
+    rest.forEach((card, slot) => {
+      shuffle.to(cards[card], { ...SLOTS[slot], duration: time(0.5), ease: "back.out(2.2)", overwrite: "auto" }, time(0.18));
+    });
+
+    order.current = [...rest, out];
+    setFront(rest[0]);
+  }, []);
+
+  /* Auto-deal while on screen, held while hovered or focused. */
   useGSAP(
     () => {
-      const el = stack.current;
+      const el = root.current;
       if (!el) return;
-      const [back, middle] = el.querySelectorAll<HTMLElement>("[data-photo]");
       const media = gsap.matchMedia();
       media.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.to(back, {
-          x: open ? -46 : -18,
-          rotation: open ? -11 : -6,
-          duration: 0.55,
-          ease: "back.out(2)",
+        let timer: gsap.core.Tween | null = null;
+        let visible = false;
+        let held = false;
+        const schedule = () => {
+          timer?.kill();
+          timer = visible && !held ? gsap.delayedCall(DEAL_EVERY, () => {
+            deal();
+            schedule();
+          }) : null;
+        };
+        const hold = (value: boolean) => () => {
+          held = value;
+          schedule();
+        };
+        const onEnter = hold(true);
+        const onLeave = hold(false);
+        el.addEventListener("pointerenter", onEnter);
+        el.addEventListener("pointerleave", onLeave);
+        el.addEventListener("focus", onEnter);
+        el.addEventListener("blur", onLeave);
+        const trigger = ScrollTrigger.create({
+          trigger: el,
+          start: "top bottom",
+          end: "bottom top",
+          onToggle: (self) => {
+            visible = self.isActive;
+            schedule();
+          },
         });
-        gsap.to(middle, {
-          x: open ? 46 : 18,
-          rotation: open ? 10 : 5,
-          duration: 0.55,
-          ease: "back.out(2)",
-        });
+        return () => {
+          timer?.kill();
+          trigger.kill();
+          gsap.killTweensOf(el.querySelectorAll("[data-photo]"));
+          el.removeEventListener("pointerenter", onEnter);
+          el.removeEventListener("pointerleave", onLeave);
+          el.removeEventListener("focus", onEnter);
+          el.removeEventListener("blur", onLeave);
+        };
       });
     },
-    { scope: stack, dependencies: [open] },
+    { scope: root, dependencies: [deal] },
   );
 
   return (
-    <button
-      ref={stack}
-      type="button"
-      aria-pressed={open}
-      aria-label={open ? "Strânge fotografiile" : "Desfă fotografiile"}
-      onClick={() => setOpen((value) => !value)}
-      onPointerEnter={(event) => event.pointerType === "mouse" && setOpen(true)}
-      onPointerLeave={(event) => event.pointerType === "mouse" && setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
-      className="relative mx-auto grid h-48 w-full place-items-center sm:h-52"
-    >
-      {/* Resting offsets as inline transforms, so GSAP reads and tweens them. */}
-      <span
-        data-photo
-        className="absolute aspect-[4/5] h-40 sm:h-44"
-        style={{ transform: "translateX(-18px) rotate(-6deg)" }}
+    <div className="flex flex-col items-center gap-3">
+      <button
+        ref={root}
+        type="button"
+        onClick={() => deal()}
+        aria-label={`Fotografia următoare. Acum: ${SHOTS[front].label}`}
+        className="relative grid h-48 w-full place-items-center sm:h-52"
       >
-        <Placeholder label="Fotografie 3" tone="#2a1f2c" className="size-full shadow-lg" />
-      </span>
-      <span
-        data-photo
-        className="absolute aspect-[4/5] h-40 sm:h-44"
-        style={{ transform: "translateX(18px) rotate(5deg)" }}
-      >
-        <Placeholder label="Fotografie 2" tone="#1f2a2c" className="size-full shadow-lg" />
-      </span>
-      <span className="absolute aspect-[4/5] h-40 sm:h-44">
-        <Placeholder label="Fotografie 1" tone="#33291b" className="size-full shadow-[6px_6px_0_var(--flux-yellow)]" />
-      </span>
-    </button>
-  );
-}
-
-/* ---------------------------------------------------------- C: design specimen */
-
-function DesignSpecimen() {
-  const root = useRef<HTMLDivElement>(null);
-
-  /* One colour pass over the type sample when it comes into view, then it rests in paper. */
-  useGSAP(
-    () => {
-      const sample = root.current?.querySelector<HTMLElement>("[data-type-sample]");
-      if (!sample) return;
-      const media = gsap.matchMedia();
-      media.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap
-          .timeline({ scrollTrigger: { trigger: sample, start: "top 80%", once: true } })
-          .to(sample, { color: "var(--flux-violet)", duration: 0.35 })
-          .to(sample, { color: "var(--flux-yellow)", duration: 0.35 })
-          .to(sample, { color: "var(--flux-cyan)", duration: 0.35 })
-          .to(sample, { color: "var(--eggshell)", duration: 0.5 });
-      });
-    },
-    { scope: root },
-  );
-
-  return (
-    <div ref={root} className="grid grid-cols-[1fr_auto] items-end gap-4">
-      <div>
-        <p data-type-sample className="font-display text-7xl leading-none font-bold tracking-[-0.04em] text-eggshell">
-          Aa
-        </p>
-        <p className="mt-1 font-serif text-3xl leading-none text-platinum italic">Aa</p>
-        <div className="mt-4 flex gap-1.5" aria-label="Paletă de culori exemplu">
-          {FLUX_BARS.map((color) => (
-            <span key={color} className={cn("size-5 rounded-full ring-1 ring-black/30", color)} />
+        <ArtStage className="absolute inset-0 grid place-items-center">
+          {SHOTS.map(({ label, Art }, index) => (
+            <div
+              key={label}
+              data-photo
+              className="absolute aspect-[4/5] h-40 overflow-hidden rounded-xl border-2 border-[#15110d] shadow-[5px_5px_0_var(--flux-yellow)] sm:h-44"
+              style={{ transform: slotTransform(SLOTS[index]), zIndex: SLOTS[index].zIndex }}
+            >
+              <Art />
+            </div>
           ))}
-        </div>
-      </div>
-      <Placeholder label="Specimen design" tone="#251c33" className="aspect-[3/4] h-36" />
+        </ArtStage>
+      </button>
+      {/* Which subject is in front, in the words of the lead line. */}
+      <p className="flex gap-1.5" aria-live="polite">
+        {SHOTS.map(({ label }, index) => (
+          <span
+            key={label}
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-[11px] motion-safe:transition-colors motion-safe:duration-300",
+              index === front
+                ? "border-flux-yellow/60 bg-flux-yellow/15 text-eggshell"
+                : "border-eggshell/10 text-dim",
+            )}
+          >
+            {label}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }
@@ -424,17 +401,10 @@ function EditingCompare() {
 
   /* The same frame twice: graded on top, the flat log underneath. */
   const frameArt = (
-    <div className="absolute inset-0">
-      <div className="absolute inset-0 flex">
-        {FLUX_BARS.map((color) => (
-          <span key={color} className={cn("h-full flex-1", color)} />
-        ))}
-      </div>
-      <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_45%,transparent,rgb(18_14_11/0.75))]" />
-      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-background/70 px-3 py-1 text-[11px] tracking-[0.1em] text-eggshell uppercase">
-        Cadru placeholder
-      </span>
-    </div>
+    <ArtStage className="absolute inset-0">
+      <LandscapeScene slice />
+      <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_45%,transparent,rgb(18_14_11/0.55))]" />
+    </ArtStage>
   );
 
   return (
@@ -476,7 +446,7 @@ function EditingCompare() {
           { label: "Titluri", color: "bg-flux-yellow", clips: [[8, 26], [64, 86]] },
         ].map((track) => (
           <div key={track.label} className="flex items-center gap-3">
-            <span className="w-14 shrink-0 text-[10px] tracking-[0.08em] text-dim uppercase">{track.label}</span>
+            <span className="font-mono w-14 shrink-0 text-[10px] tracking-[0.08em] text-dim uppercase">{track.label}</span>
             <div className="relative h-3 flex-1 rounded-sm bg-eggshell/[0.05]">
               {track.clips.map(([from, to]) => (
                 <span
@@ -563,7 +533,9 @@ function FormatSwitch() {
         ref={stage}
         className="relative grid min-h-52 flex-1 place-items-center overflow-hidden rounded-2xl border border-eggshell/10 bg-[linear-gradient(160deg,#1f2a1d,#17120e)]"
       >
-        <Placeholder label="Același proiect" tone="#1f2a1d" className="absolute inset-0 rounded-none border-0 opacity-60" />
+        <ArtStage className="absolute inset-0 opacity-80">
+          <LandscapeScene slice />
+        </ArtStage>
         <div
           ref={crop}
           aria-hidden="true"
@@ -601,51 +573,6 @@ function FormatSwitch() {
   );
 }
 
-/* ----------------------------------------------------------- F: workflow */
-
-function Workflow() {
-  const root = useRef<HTMLOListElement>(null);
-
-  /* The steps light up one after another, once, as the card comes in. */
-  useGSAP(
-    () => {
-      const el = root.current;
-      if (!el) return;
-      const media = gsap.matchMedia();
-      media.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from(el.querySelectorAll("[data-step]"), {
-          autoAlpha: 0,
-          y: 18,
-          scale: 0.92,
-          duration: 0.5,
-          ease: "back.out(2.4)",
-          stagger: 0.14,
-          scrollTrigger: { trigger: el, start: "top 85%", once: true },
-        });
-      });
-    },
-    { scope: root },
-  );
-
-  return (
-    <ol ref={root} className="grid gap-3 md:grid-cols-4">
-      {STEPS.map((step, index) => (
-        <li
-          key={step.title}
-          data-step
-          className="relative rounded-2xl border border-eggshell/10 bg-eggshell/[0.03] p-4"
-        >
-          <span className="grid size-8 place-items-center rounded-full bg-flux-cyan font-display text-sm font-bold text-background">
-            {index + 1}
-          </span>
-          <p className="mt-3 font-display text-lg font-bold text-eggshell">{step.title}</p>
-          <p className="mt-1 text-sm leading-relaxed text-platinum/80">{step.body}</p>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 /* ---------------------------------------------------------------- section */
 
 /**
@@ -654,14 +581,17 @@ function Workflow() {
  *
  *   A  presentation video (9:16 slot, user-started play/pause)
  *   B  photo shoots, a stack that fans out on hover, focus or tap
- *   C  graphic design, type and colour specimen
+ *   C  graphic design, an artboard re-laid as poster, post and banner
+ *   C2 logo design, construction grid to symbol to the logo in use
  *   D  video editing, before/after on one frame plus an illustrated timeline
  *   E  delivery formats, a crop outline moving between 16:9, 1:1 and 9:16
- *   F  brief to delivery, four steps and the contact action
+ *
+ * The brief-to-delivery workflow is its own section below
+ * (app/components/process-journey.tsx).
  *
  * Every image is a labelled placeholder until real work is dropped in.
- * Layout: 12 columns on desktop (A 8 wide beside B over C, D 8 beside E,
- * F full width), 2 on tablets, 1 on phones, always in A to F order.
+ * Layout: 12 columns on desktop (A 8 wide beside B, C and C2 stacked; D 8 beside E),
+ * 2 on tablets, 1 on phones, always in A to E order.
  */
 export function CreativeBento() {
   const root = useRef<HTMLDivElement>(null);
@@ -687,19 +617,20 @@ export function CreativeBento() {
     >
       <div ref={root} className="mx-auto w-full max-w-6xl">
         <header className="mx-auto max-w-5xl text-center">
-          <p data-bento-lead className="text-xs tracking-[0.14em] text-dim uppercase">
+          <p data-bento-lead className="type-index text-dim">
             Producție de conținut
           </p>
           <h2
             data-bento-heading
-            className="mt-5 font-display text-[length:clamp(2.3rem,1.1rem+4.4vw,5.25rem)] leading-[1.04] font-bold tracking-[-0.03em] text-balance text-eggshell"
+            className="type-h2 mt-2 text-balance text-eggshell"
           >
             {lead.map((word, index) => (
               <span key={`${word}-${index}`}>
                 <PopText text={word} />{" "}
               </span>
             ))}
-            <span className="relative inline-block whitespace-nowrap">
+            {/* "în lumină" is the one DOM accent. The bar stroke under it stays on the flux paints. */}
+            <span className="relative inline-block whitespace-nowrap text-signal-design">
               {payoff.map((word, index) => (
                 <span key={`${word}-${index}`}>
                   <PopText text={word} />
@@ -717,21 +648,18 @@ export function CreativeBento() {
               </span>
             </span>
           </h2>
-          <p
-            data-bento-lead
-            className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-platinum md:text-lg"
-          >
+          <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
             Filmări, ședințe foto, design grafic și editare video, de la idee la
             materialele finale.
           </p>
         </header>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 md:mt-16 lg:grid-cols-12 lg:gap-5">
-          {/* A: the presentation. The video slot keeps 9:16; the spare width carries the copy. */}
-          <BentoCard accent="var(--flux-cyan)" className="sm:col-span-2 lg:col-span-8 lg:row-span-2">
-            <CardContent className="grid h-full items-center gap-6 sm:grid-cols-[auto_1fr] sm:gap-8">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 md:mt-8 lg:grid-cols-12 lg:gap-5">
+          {/* A: the presentation leads. The slot stays 9:16; the title starts at the top so the crop does not move it. */}
+          <BentoCard accent="var(--flux-cyan)" className="sm:col-span-2 lg:col-span-8 lg:row-span-3">
+            <CardContent className="grid h-full items-start gap-6 sm:grid-cols-[auto_1fr] sm:gap-8">
               <VideoSlot />
-              <div className="flex flex-col gap-4">
+              <div className="flex min-w-0 flex-col gap-4">
                 <Badge className="bg-flux-cyan font-bold text-background">Prezentare</Badge>
                 <Title strong="Filmare &" soft="producție video" />
                 <Lead>De la idee la cadre care spun povestea ta.</Lead>
@@ -742,7 +670,7 @@ export function CreativeBento() {
                     </Badge>
                   ))}
                 </div>
-                <p className="text-sm text-dim">
+                <p className="type-note text-dim">
                   Apasă pe play ca să pornești prezentarea. Nu rulează singură.
                 </p>
               </div>
@@ -751,7 +679,7 @@ export function CreativeBento() {
 
           {/* B: photo shoots. */}
           <BentoCard accent="var(--flux-yellow)" className="lg:col-span-4">
-            <CardHeader className="gap-y-1.5">
+            <CardHeader className="gap-y-3">
               <Title strong="Ședințe" soft="foto" />
               <Lead>Oameni. Produse. Branduri.</Lead>
             </CardHeader>
@@ -760,20 +688,31 @@ export function CreativeBento() {
             </CardContent>
           </BentoCard>
 
-          {/* C: graphic design. */}
+          {/* C: graphic design, an artboard at work. */}
           <BentoCard accent="var(--flux-violet)" className="lg:col-span-4">
-            <CardHeader className="gap-y-1.5">
+            <CardHeader className="gap-y-3">
               <Title strong="Design" soft="grafic" />
-              <Lead>O identitate vizuală coerentă.</Lead>
+              <Lead>Afișe, postări și bannere, construite pe identitatea ta.</Lead>
             </CardHeader>
             <CardContent className="mt-auto">
-              <DesignSpecimen />
+              <GraphicDesignBoard />
+            </CardContent>
+          </BentoCard>
+
+          {/* C2: logo design, from construction grid to the logo in use. */}
+          <BentoCard accent="var(--flux-yellow)" className="sm:col-span-2 lg:col-span-4">
+            <CardHeader className="gap-y-3">
+              <Title strong="Logo" soft="design" />
+              <Lead>De la schiță la simbolul care te reprezintă, cu toate variantele lui.</Lead>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <LogoBuilder />
             </CardContent>
           </BentoCard>
 
           {/* D: editing. */}
           <BentoCard accent="var(--flux-magenta)" className="sm:col-span-2 lg:col-span-8">
-            <CardHeader className="gap-y-1.5">
+            <CardHeader className="gap-y-3">
               <Title strong="Editare" soft="video" />
               <Lead>Ritm, culoare și sunet. Fiecare cadru contează.</Lead>
             </CardHeader>
@@ -784,7 +723,7 @@ export function CreativeBento() {
 
           {/* E: delivery formats. */}
           <BentoCard accent="var(--flux-green)" className="sm:col-span-2 lg:col-span-4">
-            <CardHeader className="gap-y-1.5">
+            <CardHeader className="gap-y-3">
               <Title strong="Formate" soft="de livrare" />
               <Lead>Același mesaj. Fiecare format.</Lead>
             </CardHeader>
@@ -793,24 +732,6 @@ export function CreativeBento() {
             </CardContent>
           </BentoCard>
 
-          {/* F: brief to delivery. */}
-          <BentoCard accent="var(--flux-cyan)" className="sm:col-span-2 lg:col-span-12">
-            <CardHeader className="gap-y-1.5 md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <Title strong="De la brief" soft="la livrare" />
-                <Lead>Un singur partener pentru întregul proces.</Lead>
-              </div>
-              <a
-                href="#contact"
-                className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full bg-eggshell px-6 text-sm font-semibold text-background shadow-[4px_4px_0_var(--flux-cyan)] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 md:mt-0 md:w-auto"
-              >
-                Hai să vorbim
-              </a>
-            </CardHeader>
-            <CardContent>
-              <Workflow />
-            </CardContent>
-          </BentoCard>
         </div>
       </div>
     </section>

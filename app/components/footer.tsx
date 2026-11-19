@@ -7,11 +7,9 @@ import { site } from "@/app/lib/site";
 export function Footer() {
   return (
     <footer className="bg-background px-5 py-10 md:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 border-t border-white/10 pt-8 text-sm text-dim md:flex-row md:items-end md:justify-between">
-        <p className="font-display text-lg tracking-[-0.03em] text-eggshell">
-          {site.name}
-        </p>
-        <p className="max-w-md leading-relaxed">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 border-t border-white/10 pt-8 md:flex-row md:items-end md:justify-between">
+        <p className="type-nav text-eggshell">{site.name}</p>
+        <p className="type-note max-w-md text-dim">
           Model 3D „Technical difficulties” de{" "}
           <a
             href="https://sketchfab.com/zirodesign"

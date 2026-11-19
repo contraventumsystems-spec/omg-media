@@ -1,4 +1,4 @@
-import { audiences, faqs, outcomes } from "@/app/lib/site";
+import { faqs, outcomes } from "@/app/lib/site";
 import { ServicesStory } from "@/app/components/services-story";
 import { StreamsBeat } from "@/app/components/streams-beat";
 import { WorkBeat } from "@/app/components/work-beat";
@@ -121,26 +121,6 @@ export function AiSystem() {
   );
 }
 
-/** One bar colour per card. Red stays reserved for live and error states. */
-export function Fit() {
-  return (
-    <Section id="pentru-cine">
-      <h2 className="max-w-xl font-display text-4xl leading-[0.95] tracking-[-0.03em] text-eggshell md:text-6xl">
-        Pentru firme care vor cereri, nu doar vizite.
-      </h2>
-      <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {audiences.map((audience) => (
-          <li
-            key={audience.label}
-            className={`border-t-2 bg-white/[0.03] p-5 text-lg text-eggshell ${audience.accent}`}
-          >
-            {audience.label}
-          </li>
-        ))}
-      </ul>
-    </Section>
-  );
-}
 
 /** Native disclosure so the questions work without client JavaScript. */
 export function Faq() {

@@ -30,7 +30,7 @@ export function StickyWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       data-cta="sticky"
-      className="fixed inset-x-4 bottom-4 z-30 flex h-12 items-center justify-center rounded-full bg-eggshell text-[15px] font-medium text-background md:hidden"
+      className="type-button fixed inset-x-4 bottom-4 z-30 flex h-12 items-center justify-center rounded-full bg-eggshell text-background md:hidden"
     >
       Scrie-ne pe WhatsApp
     </a>

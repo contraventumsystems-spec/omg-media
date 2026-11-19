@@ -165,7 +165,7 @@ export function HeroBeat() {
       <div className="[text-shadow:0_0_14px_#15110D,0_0_4px_#15110D]">
         <div className="relative mx-auto flex w-full max-w-6xl items-end px-5 pb-6 md:px-10 md:pb-8">
           <div data-hero-readout className="w-full max-w-xs opacity-0 md:max-w-sm">
-            <ol className="flex gap-5 text-[11px] tracking-[0.14em] uppercase md:gap-7 md:text-xs">
+            <ol className="font-mono flex gap-5 text-[11px] tracking-[0.14em] uppercase md:gap-7 md:text-xs">
               {STAGES.map((stage, index) => (
                 <li
                   key={stage.label}
@@ -187,7 +187,7 @@ export function HeroBeat() {
           </div>
           <p
             data-hero-hint
-            className="absolute bottom-6 left-5 flex items-center gap-3 text-[11px] tracking-[0.14em] text-platinum uppercase md:bottom-8 md:left-10 md:text-xs"
+            className="font-mono absolute bottom-6 left-5 flex items-center gap-3 text-[11px] tracking-[0.14em] text-platinum uppercase md:bottom-8 md:left-10 md:text-xs"
           >
             Derulează
             <span className="scroll-hint relative block h-8 w-px overflow-hidden bg-white/15" />
