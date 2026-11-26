@@ -7,8 +7,16 @@
 
 export const site = {
   name: "OMG",
-  /** Canonical origin for metadata, the sitemap and JSON-LD. Set NEXT_PUBLIC_SITE_URL in production. */
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  /**
+   * Canonical origin for metadata, the sitemap and JSON-LD. NEXT_PUBLIC_SITE_URL
+   * wins (set it once a custom domain is live); otherwise Vercel's production
+   * domain, which Vercel provides at build time; locally, the dev server.
+   */
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "http://localhost:3000"),
   /** E.164 without the leading plus: WhatsApp and calls. */
   phone: "40784281774",
   phoneDisplay: "+40 784 281 774",
