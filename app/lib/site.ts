@@ -12,7 +12,26 @@ export const site = {
   phone: "40000000000",
   title: "Idei care prind formă — strategie, design și tehnologie",
   description:
-    "Site, conținut și reclame pentru firme care vor cereri, nu doar vizite. Strategie, design și tehnologie, pe același traseu.",
+    "Agenție de marketing digital: site-uri, conținut foto-video și reclame Google, Meta și TikTok pentru firme care vor cereri, nu doar vizite. Strategie, design și tehnologie, pe același traseu.",
+  /** Search terms the whole site answers. Each page adds its own. */
+  keywords: [
+    "agenție marketing digital",
+    "agenție de publicitate online",
+    "creare site de prezentare",
+    "web design",
+    "magazin online",
+    "landing page",
+    "Google Ads",
+    "Meta Ads",
+    "TikTok Ads",
+    "social media",
+    "producție video",
+    "editare video",
+    "identitate de brand",
+    "design logo",
+    "SEO",
+    "România",
+  ],
 } as const;
 
 export const defaultWhatsappText =
@@ -24,15 +43,42 @@ export function whatsappHref(text: string = defaultWhatsappText) {
 }
 
 /**
- * Section links are "/#id", so they work from every page. On the homepage the
- * header rewrites them to "#id", which the channel change intercepts.
+ * The site's pages. One place for the menu, the footer, the sitemap and the
+ * "Urmează pe OMG" teaser that closes each page. `color` is the page's paint;
+ * `blurb` says what is there (menu); `hook` is the question that makes the
+ * reader want to look (teaser), `tease` the quiet link under it.
  */
-export const nav = [
-  { href: "/#servicii", label: "Servicii" },
-  { href: "/proiecte", label: "Proiecte" },
-  { href: "/#drum", label: "Cum lucrăm" },
-  { href: "/#pe-ce-te-bazezi", label: "Despre" },
-] as const;
+export const pages = {
+  servicii: {
+    href: "/servicii",
+    label: "Servicii",
+    blurb: "Reclame unde vezi unde merge fiecare leu și conținut care arată cine ești.",
+    hook: "Unde ajunge, de fapt, fiecare leu din reclame?",
+    tease: "Vezi serviciile",
+    color: "var(--flux-cyan)",
+  },
+  proiecte: {
+    href: "/proiecte",
+    label: "Proiecte",
+    blurb: "Primele proiecte semnate OMG, fiecare pe canalul lui.",
+    hook: "Ce am dat deja în emisie?",
+    tease: "Vezi proiectele",
+    color: "var(--flux-green)",
+  },
+  cumLucram: {
+    href: "/cum-lucram",
+    label: "Cum lucrăm",
+    blurb: "Pașii de la brief la livrare, colaborarea și ce îți garantăm.",
+    hook: "Ce se întâmplă după primul mesaj?",
+    tease: "Vezi cum lucrăm",
+    color: "var(--flux-magenta)",
+  },
+} as const;
+
+export type PageKey = keyof typeof pages;
+
+/** The menu, in reading order. */
+export const nav = [pages.servicii, pages.proiecte, pages.cumLucram] as const;
 
 export const services = [
   {

@@ -516,7 +516,7 @@ export function ProjectsReel() {
                     nostru. Lista crește cu fiecare client.
                   </p>
                   {filters.length > 2 ? (
-                    <div data-bento-lead className="mt-4 flex flex-wrap justify-center gap-1.5" role="radiogroup" aria-label="Filtrează după serviciu">
+                    <div data-bento-lead className="mt-3 flex flex-wrap justify-center gap-1.5 md:mt-4" role="radiogroup" aria-label="Filtrează după serviciu">
                       {filters.map((item) => (
                         <button
                           key={item.id}
@@ -537,7 +537,8 @@ export function ProjectsReel() {
                       ))}
                     </div>
                   ) : null}
-                  <div data-bento-lead className="mt-5 flex flex-col items-center gap-2 md:mt-6">
+                  {/* On phones the filter row takes the hint's place, so the intro stays clear of the set. */}
+                  <div data-bento-lead className={cn("mt-5 flex-col items-center gap-2 md:mt-6 md:flex", filters.length > 2 ? "hidden" : "flex")}>
                     <span className="type-index text-dim">Glisează ca să schimbi canalul</span>
                     <span className="scroll-hint relative h-8 w-px overflow-hidden bg-eggshell/15" />
                   </div>
@@ -595,7 +596,7 @@ export function ProjectsReel() {
                       Scrie-ne pe WhatsApp
                     </a>
                     <Link
-                      href="/#drum"
+                      href="/cum-lucram"
                       className="type-button inline-flex h-11 items-center rounded-full border border-eggshell/20 px-5 text-eggshell hover:border-eggshell/50"
                     >
                       Cum lucrăm

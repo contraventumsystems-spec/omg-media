@@ -44,14 +44,11 @@ export type Project = {
   color: string;
 };
 
-const LOREM =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus, posuere velit aliquet.";
-const LOREM_STORY = [
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed odio dui, cras mattis consectetur purus sit amet fermentum. Nullam quis risus eget urna mollis ornare vel eu leo.",
-  "Vestibulum id ligula porta felis euismod semper. Maecenas faucibus mollis interdum, aenean lacinia bibendum nulla sed consectetur. Etiam porta sem malesuada magna mollis euismod.",
-];
-
-/** In the order they air: the reel and the detail pages' "next channel" follow it. */
+/**
+ * In the order they air: the reel and the detail pages' "next channel" follow it.
+ * Copy speaks like the homepage: plain Romanian, "noi" for the team, the client's
+ * result before our method, no figures we cannot show.
+ */
 export const projects: Project[] = [
   {
     slug: "saca-experts",
@@ -60,19 +57,29 @@ export const projects: Project[] = [
     url: "https://sacaexperts.ro/",
     domain: "sacaexperts.ro",
     services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    summary:
+      "Un site de logistică care nu arată ca restul pieței, găsit în căutări și măsurat de la primul click.",
+    story: [
+      "Saca Experts preia tot drumul unei mărfi, de la furnizor până pe raft, pentru clienți din toată lumea. Am construit identitatea de brand și poziționarea în jurul acestui lucru: un singur partener pentru tot traseul, spus simplu.",
+      "Site-ul pornește de la o idee: logistica nu trebuie să arate plictisitor. L-am gândit altfel decât restul pieței, cu SEO on-page pe fiecare pagină, și funcționează pentru vizitatori de oriunde din lume.",
+      "Analytics este conectat pe tot: pagini, butoane, formulare. Știm de unde vine fiecare cerere și ce merită îmbunătățit mai departe.",
+    ],
     color: "#52cbec",
   },
   {
     slug: "sitges-capital",
     name: "Sitges Capital",
-    sector: "Vile de arhitect · Barcelona",
+    sector: "Vile de lux · lângă Barcelona",
     url: "https://www.sitgescasa.es/",
     domain: "sitgescasa.es",
     services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    summary:
+      "Un brand complet pentru vile de lux lângă Barcelona, de la identitate până la automatizările care răspund clienților.",
+    story: [
+      "Sitges Capital construiește vile de arhitect pe coasta de lângă Barcelona, într-unul dintre cele mai căutate locuri de pe litoralul spaniol. Am creat identitatea de brand de la zero și am poziționat-o pentru cumpărătorii care vor o casă unică, nu un apartament din catalog.",
+      "Site-ul prezintă fiecare vilă separat, cu arhitectura și locul în prim-plan. Am scris strategia de marketing pentru o piață în care o singură vânzare contează enorm.",
+      "În spate lucrează automatizările: cine lasă o cerere primește răspuns și pașii următori pe loc, fără să aștepte după un e-mail.",
+    ],
     color: "#7d4dfe",
   },
   {
@@ -81,20 +88,30 @@ export const projects: Project[] = [
     sector: "Service auto · overlanding",
     url: "https://www.prvatelierauto.ro/",
     domain: "prvatelierauto.ro",
-    services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    services: ["web", "ads"],
+    summary:
+      "Site, brand și reclame Google pentru un service de overlanding care primește acum cereri și din alte județe.",
+    story: [
+      "PRV pregătește mașini pentru drumurile unde asfaltul se termină: overlanding, off-road, detailing și mecanică. Am construit identitatea de brand și poziționarea pe nișa de overlanding, unde clienții știu exact ce caută și aleg după specializare.",
+      "Pe site, fiecare serviciu are pagina lui și un drum scurt până la telefon. Am lansat campaniile Google Ads pe căutările care contează pentru un atelier ca acesta.",
+      "Rezultatul se vede în cereri: clienții nu mai vin doar din zona în care rulează campaniile, vin și din alte județe, special pentru PRV.",
+    ],
     color: "#e8401e",
   },
   {
     slug: "ciprian-ungureanu",
     name: "Ciprian Ungureanu",
-    sector: "Fade Academy · școală de frizerie",
+    sector: "Fade Academy · academie de frizerie",
     url: "https://ciprianungureanu.ro/",
     domain: "ciprianungureanu.ro",
-    services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    services: ["web", "ads"],
+    summary:
+      "Academia de frizerie numărul 1 din România de 7 ani, cu site, strategie și campanii care o țin pe primul loc.",
+    story: [
+      "Fade Academy formează frizeri de 7 ani și de 7 ani este pe primul loc în România. Am construit site-ul, identitatea de brand și strategia de marketing în jurul acestui lucru: rezultate, disciplină și un mentor care predă direct.",
+      "Primul loc se păstrează cu muncă. Facem audituri pe concurență, ca academia să rămână cu un pas înainte, și ajustăm mesajele după ce vedem în piață.",
+      "Gestionăm social media, campaniile de reclame și campaniile de activare pentru fiecare grupă nouă de cursanți, de la anunț până la locurile ocupate.",
+    ],
     color: "#53d54b",
   },
   {
@@ -103,9 +120,14 @@ export const projects: Project[] = [
     sector: "Montaj și reparații acoperișuri",
     url: "https://www.acoperis-nova.ro/",
     domain: "acoperis-nova.ro",
-    services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    services: ["web", "ads"],
+    summary:
+      "Un site construit pentru apeluri: reclame Google cu intenție de conversie și pagini pe care Google le recompensează.",
+    story: [
+      "Acoperișuri Nova montează, repară și întreține acoperișuri. Am creat identitatea de brand și un site gândit pentru un singur gest: omul care are nevoie de un acoperișar să sune imediat.",
+      "Accentul cade pe Google Ads. Paginile sunt construite cu intenție de conversie: telefonul e mereu la vedere, garanția e scrisă clar, pașii sunt scurți. O pagină bună pentru om e bună și pentru Google, care o recompensează cu un scor de calitate mai mare și anunțuri mai sus.",
+      "SEO-ul lucrează în paralel, ca firma să fie găsită și în căutările obișnuite, nu doar în cele plătite.",
+    ],
     color: "#e54bc9",
   },
   {
@@ -115,8 +137,12 @@ export const projects: Project[] = [
     url: "https://dupaapalarazvan.ro/",
     domain: "dupaapalarazvan.ro",
     services: ["web"],
-    summary: LOREM,
-    story: LOREM_STORY,
+    summary:
+      "Site, brand și marketing pentru o pensiune din Maramureș, gândite să aducă grupuri, nu doar oaspeți răzleți.",
+    story: [
+      "După Apă la Răzvan este o pensiune de familie lângă Sighetu Marmației, cu bucate tradiționale și liniște de munte. Am construit identitatea de brand și site-ul pornind de la ce o face diferită: ospitalitatea maramureșeană, nu doar camerele.",
+      "Marketingul vorbește cu grupurile: familii mari, prieteni, echipe și evenimente. Un singur grup umple pensiunea dintr-o rezervare, așa că mesajele și ofertele sunt scrise pentru ei.",
+    ],
     color: "#f8d50e",
   },
 ];

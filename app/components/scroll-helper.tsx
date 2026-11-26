@@ -17,20 +17,24 @@ const SCROLL_S = 0.55;
 /** The tap that starts a jump must not count as the reader taking the wheel back. */
 const CANCEL_GRACE_MS = 160;
 
-type Seam = { gate: number; landing: number };
+export type Seam = { gate: number; landing: number };
 type Menu = "closed" | "choices" | "sections";
 
-const SECTIONS = [
-  { id: "drum", label: "Pașii până la livrare", pin: true },
-  { id: "proces", label: "Unde se vede fiecare leu", pin: false },
-  { id: "pe-ce-te-bazezi", label: "Un singur flux de lucru", pin: false },
-] as const;
+/** A jump target: `pin` stages land at their top, the rest under the header. */
+export type HelperSection = { id: string; label: string; pin: boolean };
+
+/** The homepage's sections. Each page passes its own. */
+const HOME_SECTIONS: HelperSection[] = [
+  { id: "pentru-cine", label: "Pentru cine lucrăm", pin: false },
+  { id: "ce-construim", label: "Ce construim", pin: true },
+  { id: "intrebari", label: "Întrebări", pin: false },
+];
 
 /**
  * Scroll position at progress `p`, with the empty hero/services stretch
  * removed. The position jumps that stretch in one step instead of playing it.
  */
-function positionAlong(from: number, to: number, seam: Seam | null, p: number): number {
+export function positionAlong(from: number, to: number, seam: Seam | null, p: number): number {
   if (!seam) return from + (to - from) * p;
   const downward = to >= from;
   const lo = Math.min(from, to);
@@ -61,7 +65,7 @@ function scrollTarget(id: string, pin: boolean): number | null {
   return Math.max(0, top - offset);
 }
 
-function seamOnPath(from: number, to: number): Seam | null {
+export function seamOnPath(from: number, to: number): Seam | null {
   const seam = heroServicesSeam();
   if (!seam) return null;
   const overlap = Math.min(Math.max(from, to), seam.landing) - Math.max(Math.min(from, to), seam.gate);
@@ -73,7 +77,7 @@ function seamOnPath(from: number, to: number): Seam | null {
  * appears once the reader scrolls back up after the first 6%. The arrow opens
  * a two-step menu: the top of the hero, or one of three sections.
  */
-export function ScrollHelper() {
+export function ScrollHelper({ sections = HOME_SECTIONS }: { sections?: HelperSection[] }) {
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -362,7 +366,7 @@ export function ScrollHelper() {
                 </Choice>
               </>
             ) : (
-              SECTIONS.map((section, index) => (
+              sections.map((section, index) => (
                 <Choice
                   key={section.id}
                   index={String(index + 1).padStart(2, "0")}

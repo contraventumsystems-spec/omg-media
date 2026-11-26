@@ -1078,3 +1078,264 @@ html.reel-paged {
     animation: none;
   }
 }
+
+/*
+ * Jump targets on the inner pages land under the fixed header (two rows on
+ * phones). Pinned stages (#drum) keep their own top.
+ */
+#proces,
+#continut,
+#colaborare,
+#pe-ce-te-bazezi {
+  scroll-margin-top: 6rem;
+}
+
+@media (min-width: 768px) {
+  #proces,
+  #continut,
+  #colaborare,
+  #pe-ce-te-bazezi {
+    scroll-margin-top: 5.5rem;
+  }
+}
+
+/*
+ * The phone menu (app/components/mobile-menu.tsx). The page behind does not
+ * scroll while it is open; the links rise in one after the other.
+ */
+html.menu-open {
+  overflow: hidden;
+}
+
+.menu-dialog[open] .menu-item {
+  animation: menu-item 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i) * 50ms + 60ms);
+}
+
+@keyframes menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/*
+ * "Urmează pe OMG" (app/components/next-stops.tsx): a hook slips its channel
+ * on hover or focus, two colour ghosts split off it, and the tease line under
+ * it draws its bar.
+ */
+.hook-line {
+  transition: text-shadow 180ms steps(3, jump-end), transform 180ms steps(3, jump-end);
+}
+
+.hook-link:hover .hook-line,
+.hook-link:focus-visible .hook-line {
+  text-shadow:
+    -3px 0 var(--flux-cyan),
+    3px 0 var(--flux-magenta);
+  transform: skewX(-4deg);
+}
+
+.hook-bar {
+  transform: scaleX(0.18);
+  transform-origin: left;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hook-link:hover .hook-bar,
+.hook-link:focus-visible .hook-bar {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-dialog[open] .menu-item {
+    animation: none;
+  }
+
+  .hook-line,
+  .hook-bar {
+    transition: none;
+  }
+
+  .hook-link:hover .hook-line,
+  .hook-link:focus-visible .hook-line {
+    transform: none;
+  }
+}
+
+/*
+ * "Urmează pe OMG" promos (app/components/next-stops.tsx). Everything runs
+ * only under .promo-live (block on screen, motion allowed); otherwise the
+ * screens hold a still frame.
+ */
+.promo-static {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.82 0 0 0 0 0.76 0 0 0 1.1 0'/%3E%3C/filter%3E%3Crect width='120' height='90' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-color: #120e0b;
+  background-size: 120px 90px;
+  transition: opacity 80ms steps(2);
+}
+
+.promo-live .promo-static {
+  animation: promo-noise 160ms steps(4) infinite;
+}
+
+@keyframes promo-noise {
+  to {
+    background-position: 60px 45px;
+  }
+}
+
+/* The bars: a still chart, then climbing and settling in a wave once live. */
+.promo-bar {
+  height: calc(28% + var(--i) * 11%);
+  transform-origin: bottom;
+}
+
+.promo-live .promo-bar {
+  animation: promo-bar 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  animation-delay: calc(var(--i) * 120ms);
+}
+
+@keyframes promo-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  45%,
+  70% {
+    transform: scaleY(1);
+  }
+}
+
+.promo-sweep {
+  transform: scaleX(0.5);
+  transform-origin: left;
+}
+
+.promo-live .promo-sweep {
+  animation: promo-sweep 2.4s ease-in-out infinite;
+}
+
+@keyframes promo-sweep {
+  0% {
+    transform: scaleX(0);
+  }
+  60%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* The steps: a signal crosses the line; each step lights as it passes. */
+.promo-step {
+  opacity: 0.45;
+}
+
+.promo-live .promo-step {
+  animation: promo-step 3s steps(1) infinite;
+  animation-delay: calc(var(--i) * 0.42s);
+}
+
+@keyframes promo-step {
+  0% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  14%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+}
+
+.promo-signal {
+  opacity: 0;
+}
+
+.promo-live .promo-signal {
+  animation: promo-signal 3s linear infinite;
+}
+
+@keyframes promo-signal {
+  0% {
+    left: 0.25rem;
+    opacity: 1;
+  }
+  84% {
+    left: calc(100% - 0.75rem);
+    opacity: 1;
+  }
+  85%,
+  100% {
+    left: calc(100% - 0.75rem);
+    opacity: 0;
+  }
+}
+
+/* The ticker. */
+.promo-live .promo-ticker {
+  animation: promo-ticker 26s linear infinite;
+}
+
+@keyframes promo-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Hover or focus: the set's picture slips, like a channel losing hold. */
+.hook-link:hover .promo-glass,
+.hook-link:focus-visible .promo-glass {
+  animation: promo-slip 360ms steps(3) 1;
+}
+
+.hook-link:hover .promo-tv,
+.hook-link:focus-visible .promo-tv {
+  transform: rotate(-2deg) scale(1.03);
+}
+
+.promo-tv {
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes promo-slip {
+  0% {
+    transform: translateY(0);
+    filter: none;
+  }
+  33% {
+    transform: translateY(-8%);
+    filter: hue-rotate(90deg) saturate(1.6);
+  }
+  66% {
+    transform: translateY(5%) skewX(-6deg);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hook-link:hover .promo-glass,
+  .hook-link:focus-visible .promo-glass {
+    animation: none;
+  }
+
+  .hook-link:hover .promo-tv,
+  .hook-link:focus-visible .promo-tv {
+    transform: none;
+  }
+}
+
+/* The Explorează glide's stop pill rises in. */
+.glide-pill {
+  animation: glide-pill 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes glide-pill {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

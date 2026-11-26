@@ -28,9 +28,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const ChannelWall = dynamic(() => import("@/app/components/cabinet-tv"), { ssr: false });
 
 /**
- * "Ce construim, canal cu canal": the in-depth companion to the journey
- * above it. The journey says in which order; this says what goes into each
- * pillar, so nothing here repeats a step.
+ * "Ce construim, canal cu canal": what goes into each pillar. The order of
+ * the work lives on /cum-lucram, so nothing here repeats a step.
  *
  * Three televisions from the hero's pile, one per pillar, are the whole
  * section. The stage sticks while they rise in at three different speeds and
@@ -44,7 +43,7 @@ const ChannelWall = dynamic(() => import("@/app/components/cabinet-tv"), { ssr: 
  *
  * Phones: the three sets stack down the stage in a zig-zag, each beside its
  * label. From md: a row of three, the middle one larger, labels underneath.
- * Collaboration stays a teletext page below the stage.
+ * How the collaboration works is on /cum-lucram (app/components/collaboration.tsx).
  *
  * Reduced motion: no sticky stage and no flight, the sets are tuned from the
  * start, and the dialog opens on the site's 150 ms dip.
@@ -161,20 +160,6 @@ const PILLARS: Pillar[] = [
   },
 ];
 
-const COLLABORATION: Item[] = [
-  {
-    title: "Proiectul de început",
-    body: "Poate fi un site, o campanie, o producție de conținut sau un plan care le leagă. Știi de la început ce primești, în ce etape, cât costă și cum se face plata.",
-  },
-  {
-    title: "Colaborarea lunară",
-    body: "Pentru promovare și îmbunătățiri continue, stabilim ce gestionăm, ce materiale pregătim și ce raportăm. Ritmul și durata colaborării sunt scrise în ofertă.",
-  },
-  {
-    title: "Bugetul de promovare",
-    body: "Dacă lucrăm cu reclame, bugetul media este separat de serviciile agenției. Îl stabilim împreună și îl plătești direct către platforme, din conturile tale.",
-  },
-];
 
 /** On-screen ident of a pillar, as drawn by the set. */
 const channelOf = (pillar: Pillar, index: number): Channel => ({
@@ -571,7 +556,7 @@ export function PillarCabinet() {
   return (
     <section ref={root} id="ce-construim" aria-labelledby="ce-construim-title" className="relative bg-background">
       <div ref={track} className="relative h-[190svh] md:h-[210svh] motion-reduce:h-auto">
-        <div className="sticky top-0 z-[2] flex h-svh flex-col px-4 pt-24 pb-16 sm:px-5 md:px-10 md:pt-[4.5rem] md:pb-6 motion-reduce:static motion-reduce:h-auto motion-reduce:py-24">
+        <div className="sticky top-0 z-[2] flex h-svh flex-col px-4 pt-24 pb-16 sm:px-5 md:px-10 md:pt-[5.75rem] md:pb-6 motion-reduce:static motion-reduce:h-auto motion-reduce:py-24">
           <header data-channel-heading className="mx-auto max-w-3xl shrink-0 text-center">
             <p data-bento-lead className="type-index text-dim">În fiecare pilon</p>
             <h2 id="ce-construim-title" data-bento-heading className="type-h2 mt-2 text-balance text-eggshell">
@@ -595,7 +580,6 @@ export function PillarCabinet() {
               </span>
             </h2>
             <p data-bento-lead className="type-lead mx-auto mt-3 hidden text-platinum md:block">
-              <span className="hidden md:inline">Pașii de mai sus arată ordinea. </span>
               Fiecare televizor e un pilon: apasă pe ecran și vezi ce construim în el.
             </p>
           </header>
@@ -778,51 +762,6 @@ export function PillarCabinet() {
         ) : null}
       </dialog>
 
-      <div className="relative z-[2] px-4 pb-24 sm:px-5 md:px-10 md:pb-32">
-        <div className="mx-auto w-full max-w-6xl">
-          {/* Teletext: how working together looks, always readable. */}
-          <aside
-            aria-labelledby="colaborare-title"
-            className="rounded-3xl border-[3px] border-[#15110d] bg-[#0d0a08] p-5 font-mono shadow-[6px_6px_0_var(--flux-yellow)] md:mt-16 md:p-6"
-          >
-            <p data-tt className="flex items-center justify-between gap-3 bg-flux-yellow px-2 py-1 text-[11px] font-bold text-[#15110d]">
-              <span>P101 TELETEXT</span>
-              <span>OMG · COLABORARE</span>
-            </p>
-            <h3 id="colaborare-title" data-tt className="type-title mt-4 text-balance text-eggshell">
-              Cum arată colaborarea
-            </h3>
-            <dl className="mt-4 grid gap-x-6 md:grid-cols-3">
-              {COLLABORATION.map((row, index) => (
-                <div key={row.title} data-tt className="border-t border-eggshell/10 py-3">
-                  <dt className="type-title flex items-center gap-2 text-flux-cyan">
-                    <span className="type-index text-dim">{String(index + 1).padStart(2, "0")}</span>
-                    {row.title}
-                  </dt>
-                  <dd className="type-body mt-2 text-platinum">{row.body}</dd>
-                </div>
-              ))}
-            </dl>
-            <div data-tt className="mt-4 grid items-center gap-4 border-t border-eggshell/10 pt-4 md:grid-cols-[1fr_auto]">
-              <p className="type-body text-platinum">
-                Site-ul, conținutul, promovarea și automatizările sunt gândite împreună. Oferta arată ce intră în
-                proiectul tău și ce putem adăuga pe parcurs.
-              </p>
-              <div>
-                <a
-                  href="#contact"
-                  className="type-button inline-flex h-12 w-full items-center justify-center rounded-full bg-eggshell px-6 text-background shadow-[4px_4px_0_var(--flux-cyan)] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 md:w-auto"
-                >
-                  Hai să vorbim
-                </a>
-                <p className="type-note mt-2 text-center text-dim md:text-left">
-                  Spune-ne cu ce te ocupi și ce ai vrea să funcționeze mai bine.
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </div>
     </section>
   );
 }

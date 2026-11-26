@@ -197,32 +197,3 @@ export function HeroBeat() {
     </div>
   );
 }
-
-/**
- * Explorează. Scrolls to the point where the whole pile is in frame,
- * or to the services when the beat is switched off by reduced motion.
- */
-export function ExploreButton({ className }: { className?: string }) {
-  function onClick() {
-    const hero = document.getElementById("hero");
-    if (!hero) return;
-    const travel = hero.offsetHeight - window.innerHeight;
-    if (travel < 8) {
-      document.getElementById("servicii")?.scrollIntoView();
-      return;
-    }
-    window.scrollTo({
-      top: hero.offsetTop + travel * (HERO_BEAT.revealEnd + 0.02),
-      behavior: "smooth",
-    });
-  }
-
-  return (
-    <button type="button" onClick={onClick} className={className}>
-      Explorează
-      <span aria-hidden="true" className="ml-2">
-        ↓
-      </span>
-    </button>
-  );
-}

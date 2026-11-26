@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/proiecte/[slug]">
   if (!project) return {};
   const services = project.services.map((service) => SERVICES[service].label).join(", ");
   const title = `${project.name}: ${services}`;
-  const description = `${project.name}, ${project.sector.toLowerCase()}. ${services} realizat de ${site.name}. Vezi site-ul live și cum arată pe telefon.`;
+  const description = `${project.summary} ${services} de ${site.name}.`;
   const url = `/proiecte/${project.slug}`;
   return {
     title: `${title} | ${site.name}`,
@@ -95,7 +95,7 @@ export default function ProjectPage({ params }: PageProps<"/proiecte/[slug]">) {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <Suspense fallback={<ProjectFallback />}>
           <ProjectBody params={params} />
         </Suspense>

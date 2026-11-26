@@ -1,5 +1,6 @@
 import { ArcMark } from "@/app/components/arc-mark";
-import { ExploreButton, HeroBeat } from "@/app/components/hero-beat";
+import { ExploreButton } from "@/app/components/explore-button";
+import { HeroBeat } from "@/app/components/hero-beat";
 import { whatsappHref } from "@/app/lib/site";
 
 /**

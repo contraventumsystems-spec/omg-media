@@ -15,6 +15,7 @@ const description =
 export const metadata: Metadata = {
   title: `${title} | ${site.name}`,
   description,
+  keywords: ["portofoliu agenție marketing", "portofoliu web design", "site-uri realizate", "proiecte website", "exemple site de prezentare"],
   alternates: { canonical: "/proiecte" },
   openGraph: {
     title,
@@ -66,7 +67,7 @@ export default function ProjectsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd()).replace(/</g, "\\u003c") }}
       />
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <ProjectsReel />
         {/* Solid and above the reel's fixed layers. */}
         <div className="relative z-10 bg-background">

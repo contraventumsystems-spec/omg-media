@@ -1,82 +1,67 @@
 import Link from "next/link";
-import { nav, site, whatsappHref } from "@/app/lib/site";
+import { Logo } from "@/app/components/logo";
+import { MobileMenu } from "@/app/components/mobile-menu";
+import { NavLinks } from "@/app/components/nav-links";
+import { whatsappHref } from "@/app/lib/site";
+import { cn } from "@/lib/utils";
 
-type NavItem = (typeof nav)[number];
-
-/**
- * On the homepage a section link becomes "#id", so the channel change can
- * play its burst and jump; elsewhere it stays "/#id" and loads the homepage.
- */
-function linkOf(item: NavItem, home: boolean) {
-  const section = item.href.startsWith("/#");
-  return {
-    href: home && section ? item.href.slice(1) : item.href,
-    channel: home && section,
-  };
-}
-
-function NavLink({ item, home, className }: { item: NavItem; home: boolean; className: string }) {
-  const { href, channel } = linkOf(item, home);
-  if (channel) {
-    return (
-      <a href={href} data-channel className={className}>
-        {item.label}
-      </a>
-    );
-  }
-  return (
-    <Link href={href} className={className}>
-      {item.label}
-    </Link>
-  );
-}
+/** The six bars of the brand. Declared here: flow-bento is a client module, this is a server component. */
+const BARS = ["bg-flux-yellow", "bg-flux-cyan", "bg-flux-green", "bg-flux-magenta", "bg-flux-red", "bg-flux-violet"];
 
 /**
- * Fixed header so the hero can fill the first viewport underneath it.
- * The wordmark is text until the SVG mark is added.
+ * The menu bar, fixed over the page. Solid on the page's ground, so the logo
+ * (interim artwork on the same ground) sits in it seamlessly, with the six
+ * bars of the brand as its bottom edge.
+ *
+ *   phones  logo, and a "Meniu" button that opens the full-screen menu
+ *   md+     logo, the pages as numbered channels, "Hai să vorbim"
+ *
+ * 72px tall. On the homepage the logo jumps to the top behind the channel
+ * change; elsewhere it goes home.
  */
 export function Header({ home = false }: { home?: boolean }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-20 border-b border-white/10 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-5 md:px-10">
+    <header className="fixed inset-x-0 top-0 z-20 bg-background">
+      {/* First stop for keyboard and screen-reader users: past the menu, straight to the page. */}
+      <a
+        href="#main-content"
+        className="type-button sr-only rounded-full bg-eggshell px-5 py-3 text-background focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"
+      >
+        Sari la conținut
+      </a>
+      <div className="mx-auto flex h-[72px] w-full max-w-6xl items-center justify-between gap-4 px-4 md:px-10">
         {home ? (
-          <a href="#hero" data-channel className="type-nav text-eggshell">
-            {site.name}
+          <a href="#hero" data-channel aria-label="OMG Media, sus" className="shrink-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70">
+            <Logo priority />
           </a>
         ) : (
-          <Link href="/" className="type-nav text-eggshell">
-            {site.name}
+          <Link href="/" aria-label="OMG Media, acasă" className="shrink-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70">
+            <Logo priority />
           </Link>
         )}
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Principal">
-          {nav.map((item) => (
-            <NavLink
-              key={item.href}
-              item={item}
-              home={home}
-              className="type-nav text-platinum hover:text-eggshell"
-            />
-          ))}
+
+        <nav aria-label="Principal" className="hidden md:block">
+          <NavLinks />
         </nav>
-        <a
-          href={whatsappHref()}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-cta="header"
-          className="type-button text-eggshell"
-        >
-          Hai să vorbim
-        </a>
+
+        <div className="flex items-center gap-2">
+          <a
+            href={whatsappHref()}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cta="header"
+            className="type-button hidden h-11 items-center rounded-full bg-eggshell px-5 text-background shadow-[3px_3px_0_var(--flux-cyan)] outline-none motion-safe:transition-transform motion-safe:duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-eggshell/70 md:inline-flex"
+          >
+            Hai să vorbim
+          </a>
+          <MobileMenu home={home} />
+        </div>
       </div>
-      {/* On small screens the links sit on their own row so the wordmark and CTA stay tappable at 360px. */}
-      <nav
-        className="flex gap-5 overflow-x-auto px-5 pb-3 md:hidden"
-        aria-label="Principal"
-      >
-        {nav.map((item) => (
-          <NavLink key={item.href} item={item} home={home} className="type-nav shrink-0 text-platinum" />
+      <div aria-hidden="true" className="flex h-[3px] opacity-80">
+        {BARS.map((color) => (
+          <span key={color} className={cn("h-full flex-1", color)} />
         ))}
-      </nav>
+      </div>
     </header>
   );
 }

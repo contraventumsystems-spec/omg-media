@@ -333,6 +333,7 @@ export function ServicesStory() {
     <div
       ref={root}
       data-scene-stage
+      data-story-track
       className="relative z-10 -mt-[100svh] h-[480svh] motion-reduce:mt-0 motion-reduce:h-auto motion-reduce:bg-background"
     >
       <div className="sticky top-0 h-svh overflow-hidden motion-reduce:static motion-reduce:h-auto motion-reduce:overflow-visible">

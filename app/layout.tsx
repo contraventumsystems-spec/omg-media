@@ -43,12 +43,24 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: `${site.title} | ${site.name}`,
   description: site.description,
+  applicationName: "OMG Media",
+  keywords: [...site.keywords],
+  openGraph: {
+    siteName: "OMG Media",
+    locale: "ro_RO",
+    type: "website",
+    title: site.title,
+    description: site.description,
+    images: [{ url: "/brand/omg-logo.png", width: 804, height: 346, alt: "OMG Media" }],
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ro"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${displayGrotesque.variable} ${displaySerif.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background font-sans text-platinum">
