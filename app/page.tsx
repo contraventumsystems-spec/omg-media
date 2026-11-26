@@ -33,7 +33,7 @@ export default function Home() {
     <>
       <TvBackdrop />
       <div className="relative z-10">
-        <Header />
+        <Header home />
         <main>
           <Hero />
           <Services />

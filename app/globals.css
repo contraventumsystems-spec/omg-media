@@ -954,3 +954,127 @@ html:has(.channel-dialog[open]) {
   }
 }
 
+
+/*
+ * Proiecte, the channel reel (app/components/projects-reel.tsx).
+ * Every moving part here is a transform or opacity, so the layer composites
+ * and a phone keeps its frame rate. Colour changes ride on --reel.
+ */
+
+/* The reel pages the window by script; native smooth scrolling would fight it. */
+html.reel-paged {
+  scroll-behavior: auto;
+}
+
+/*
+ * The set: 4:3, as wide as the phone allows. --reel-y is where its centre
+ * and the beam sit; on wider screens the set is smaller and higher, so the
+ * two-line headlines fit under it.
+ */
+.reel-stage {
+  --reel-y: 42%;
+}
+
+.reel-tv,
+.reel-beam {
+  top: var(--reel-y);
+}
+
+.reel-tv {
+  width: min(96vw, 760px, 62svh);
+  aspect-ratio: 4 / 3;
+}
+
+@media (min-width: 768px) {
+  .reel-stage {
+    --reel-y: 37%;
+  }
+
+  .reel-tv {
+    width: min(96vw, 760px, 54svh);
+  }
+}
+
+/* Each section's text sits under the set, clear of the home indicator. */
+.reel-section {
+  padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+}
+
+.reel-caption {
+  max-height: calc(58svh - 4.5rem);
+}
+
+/* The channel's glow, centred on the set. A mask instead of a blur filter. */
+.reel-glow {
+  background-color: var(--reel);
+  opacity: 0.2;
+  mask-image: radial-gradient(ellipse 60% 42% at 50% 42%, #000 0%, transparent 100%);
+  transition: background-color 700ms ease;
+}
+
+.reel-strand-color {
+  transition: stroke 700ms ease;
+}
+
+/* The signal running along the strands, toward the top of the screen. */
+.reel-flow {
+  stroke-dasharray: 4 30;
+  animation: reel-flow 3.2s linear infinite;
+}
+
+@keyframes reel-flow {
+  to {
+    stroke-dashoffset: -34;
+  }
+}
+
+.reel-band {
+  animation: reel-band 60s linear infinite;
+}
+
+@keyframes reel-band {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.reel-mote {
+  background: var(--reel);
+  opacity: 0;
+  animation: reel-rise var(--d) linear var(--delay) infinite;
+  transition: background-color 700ms ease;
+}
+
+@keyframes reel-rise {
+  0% {
+    transform: translate3d(0, 4vh, 0);
+    opacity: 0;
+  }
+  15%,
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate3d(var(--x), -105lvh, 0);
+    opacity: 0;
+  }
+}
+
+/* The beam the set turns into: a white-hot core with a halo in the next channel's colour. */
+.reel-beam {
+  background: #fff8e8;
+  box-shadow:
+    0 0 6px 1px #fff8e8,
+    0 0 22px 6px var(--beam, var(--eggshell)),
+    0 0 80px 18px var(--beam, var(--eggshell));
+  border-radius: 9999px;
+  transform-origin: 50% 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reel-flow,
+  .reel-band,
+  .reel-mote {
+    animation: none;
+  }
+}

@@ -21,7 +21,7 @@ import { PAPER_HEX } from "@/app/lib/bars";
  * a set inside each box. The parent decides when the canvas shows at all.
  */
 
-const MODEL_URL = "/models/tv-pile.gltf";
+export const MODEL_URL = "/models/tv-pile.gltf";
 /** Centre of set 2 in the pile, from the export. The nearest shell to it is the set we keep. */
 const SET_CENTRE = new THREE.Vector3(1.02, 2.07, 4.4);
 const INK_TINT = new THREE.Color(PAPER_HEX).lerp(new THREE.Color("#ffffff"), 0.35);
@@ -112,8 +112,11 @@ function refresh(texture: THREE.Texture) {
   texture.needsUpdate = true;
 }
 
-/** Clones the cached pile, keeps set 2, swaps materials, and centres it on the origin. */
-function buildSet(scene: THREE.Object3D) {
+/**
+ * Clones the cached pile, keeps set 2, swaps materials, and centres it on the origin.
+ * `screen` is the size of the screen's canvas; the project pages paint a larger one.
+ */
+export function buildSet(scene: THREE.Object3D, screen = { width: 512, height: 384 }) {
   const root = scene.clone(true);
   root.updateWorldMatrix(true, true);
 
@@ -184,8 +187,8 @@ function buildSet(scene: THREE.Object3D) {
 
   /* The screen: a flat plane in the glass opening, facing +X. */
   const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 384;
+  canvas.width = screen.width;
+  canvas.height = screen.height;
   const context = canvas.getContext("2d") as CanvasRenderingContext2D;
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;

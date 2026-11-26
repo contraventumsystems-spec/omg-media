@@ -17,9 +17,10 @@ gsap.registerPlugin(ScrollTrigger);
  * Heading pop: every [data-pop] word in [data-bento-heading] locks in with its
  * colour ghosts, then the [data-bento-bars] stroke draws and [data-bento-lead]
  * lines rise. Waits until the heading's top is 60% down the screen, so the
- * whole line is visible before it plays.
+ * whole line is visible before it plays. `start` overrides that, for a
+ * heading that already sits low on the first screen.
  */
-export function bentoHeadingPop(scope: HTMLElement) {
+export function bentoHeadingPop(scope: HTMLElement, start = "top 60%") {
   const media = gsap.matchMedia();
   media.add("(prefers-reduced-motion: no-preference)", () => {
     const heading = scope.querySelector<HTMLElement>("[data-bento-heading]");
@@ -52,7 +53,7 @@ export function bentoHeadingPop(scope: HTMLElement) {
     pops.forEach(drawPop);
     ScrollTrigger.create({
       trigger: heading,
-      start: "top 60%",
+      start,
       once: true,
       onEnter: () => {
         intro.play();

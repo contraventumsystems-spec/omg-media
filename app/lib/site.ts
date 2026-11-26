@@ -6,6 +6,8 @@
 
 export const site = {
   name: "OMG",
+  /** Canonical origin for metadata, the sitemap and JSON-LD. Set NEXT_PUBLIC_SITE_URL in production. */
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   /** E.164 without the leading plus. Swap in the real WhatsApp number. */
   phone: "40000000000",
   title: "Idei care prind formă — strategie, design și tehnologie",
@@ -21,10 +23,15 @@ export function whatsappHref(text: string = defaultWhatsappText) {
   return `https://wa.me/${site.phone}?text=${encodeURIComponent(text)}`;
 }
 
+/**
+ * Section links are "/#id", so they work from every page. On the homepage the
+ * header rewrites them to "#id", which the channel change intercepts.
+ */
 export const nav = [
-  { href: "#servicii", label: "Servicii" },
-  { href: "#drum", label: "Cum lucrăm" },
-  { href: "#pe-ce-te-bazezi", label: "Despre" },
+  { href: "/#servicii", label: "Servicii" },
+  { href: "/proiecte", label: "Proiecte" },
+  { href: "/#drum", label: "Cum lucrăm" },
+  { href: "/#pe-ce-te-bazezi", label: "Despre" },
 ] as const;
 
 export const services = [

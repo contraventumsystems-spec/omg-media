@@ -40,6 +40,7 @@ const displaySerif = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: `${site.title} | ${site.name}`,
   description: site.description,
 };
