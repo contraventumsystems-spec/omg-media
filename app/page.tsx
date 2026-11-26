@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-/** Who we are, for search engines: the agency and what it offers. No address or phone until they are final. */
+/** Who we are, for search engines: the agency, how to reach it and what it offers. No address until it is final. */
 const organization = {
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
@@ -30,6 +30,8 @@ const organization = {
   logo: `${site.url}/brand/omg-logo.png`,
   image: `${site.url}/brand/omg-logo.png`,
   description: site.description,
+  telephone: `+${site.phone}`,
+  email: site.email,
   areaServed: "RO",
   inLanguage: "ro-RO",
   knowsAbout: [...site.keywords],

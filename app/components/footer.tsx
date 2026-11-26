@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
-import { nav, whatsappHref } from "@/app/lib/site";
+import { CookieSettingsButton } from "@/app/components/cookie-banner";
+import { mailtoHref, nav, site, telHref, whatsappHref } from "@/app/lib/site";
 
 /**
  * The logo, large; the site map, the contact and the mandatory CC BY credit for the Sketchfab TV.
@@ -8,7 +9,7 @@ import { nav, whatsappHref } from "@/app/lib/site";
  */
 export function Footer() {
   return (
-    <footer className="bg-background px-5 py-10 md:px-10">
+    <footer className="bg-background px-5 pt-10 pb-24 md:px-10 md:pb-10">
       <div className="mx-auto grid w-full max-w-6xl gap-8 border-t border-white/10 pt-8 md:grid-cols-[1fr_auto] md:items-end">
         <div>
           <Link href="/" aria-label="OMG Media, acasă" className="inline-block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70">
@@ -42,6 +43,30 @@ export function Footer() {
             </ul>
           </nav>
         </div>
+        <div className="grid gap-5 md:justify-items-end md:text-right">
+          <address className="grid gap-1 not-italic">
+            <a href={telHref} data-cta="footer-call" className="type-nav text-eggshell hover:underline">
+              {site.phoneDisplay}
+            </a>
+            <a href={mailtoHref} data-cta="footer-email" className="type-nav break-all text-platinum hover:text-eggshell">
+              {site.email}
+            </a>
+          </address>
+          <ul className="flex flex-wrap gap-x-5 gap-y-1 md:justify-end">
+            <li>
+              <Link href="/confidentialitate" className="type-note text-dim hover:text-eggshell">
+                Confidențialitate
+              </Link>
+            </li>
+            <li>
+              <Link href="/politica-cookies" className="type-note text-dim hover:text-eggshell">
+                Politica cookie
+              </Link>
+            </li>
+            <li>
+              <CookieSettingsButton className="type-note cursor-pointer text-dim hover:text-eggshell" />
+            </li>
+          </ul>
         <p className="type-note max-w-md text-dim">
           Model 3D „Technical difficulties” de{" "}
           <a
@@ -72,6 +97,7 @@ export function Footer() {
           </a>
           .
         </p>
+        </div>
       </div>
     </footer>
   );

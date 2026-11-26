@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { MobileMenu } from "@/app/components/mobile-menu";
 import { NavLinks } from "@/app/components/nav-links";
+import { WhatsAppIcon } from "@/app/components/whatsapp-icon";
 import { whatsappHref } from "@/app/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -50,8 +51,9 @@ export function Header({ home = false }: { home?: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
             data-cta="header"
-            className="type-button hidden h-11 items-center rounded-full bg-eggshell px-5 text-background shadow-[3px_3px_0_var(--flux-cyan)] outline-none motion-safe:transition-transform motion-safe:duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-eggshell/70 md:inline-flex"
+            className="type-button hidden h-11 items-center gap-2 rounded-full bg-eggshell px-5 text-background shadow-[3px_3px_0_var(--flux-cyan)] outline-none motion-safe:transition-transform motion-safe:duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-eggshell/70 md:inline-flex"
           >
+            <WhatsAppIcon className="size-4" />
             Hai să vorbim
           </a>
           <MobileMenu home={home} />

@@ -1,13 +1,14 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Phone, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import { Logo } from "@/app/components/logo";
 import { useIsCurrent } from "@/app/components/nav-links";
-import { nav, whatsappHref } from "@/app/lib/site";
+import { WhatsAppIcon } from "@/app/components/whatsapp-icon";
+import { nav, site, telHref, whatsappHref } from "@/app/lib/site";
 import { cn } from "@/lib/utils";
 
 /**
@@ -126,9 +127,18 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
               target="_blank"
               rel="noopener noreferrer"
               data-cta="menu"
-              className="type-button flex h-12 w-full items-center justify-center rounded-full bg-eggshell text-background shadow-[4px_4px_0_var(--flux-cyan)]"
+              className="type-button flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-eggshell text-background shadow-[4px_4px_0_var(--flux-cyan)]"
             >
+              <WhatsAppIcon />
               Hai să vorbim pe WhatsApp
+            </a>
+            <a
+              href={telHref}
+              data-cta="menu-call"
+              className="type-button mt-3 flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-eggshell/20 text-eggshell"
+            >
+              <Phone aria-hidden="true" className="size-4" />
+              Sună: {site.phoneDisplay}
             </a>
           </div>
         </div>

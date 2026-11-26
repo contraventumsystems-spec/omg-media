@@ -1339,3 +1339,72 @@ html.menu-open {
     transform: translateY(12px);
   }
 }
+
+/*
+ * The line to remember in project copy (app/components/rich-text.tsx): bright
+ * text on the six-bar stroke the headlines use, kept on every wrapped line.
+ */
+.rainbow-mark {
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--flux-yellow) 0 16.66%,
+    var(--flux-cyan) 16.66% 33.33%,
+    var(--flux-green) 33.33% 50%,
+    var(--flux-magenta) 50% 66.66%,
+    var(--flux-red) 66.66% 83.33%,
+    var(--flux-violet) 83.33% 100%
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 0.16em;
+  padding-bottom: 0.08em;
+  color: var(--eggshell);
+  font-weight: 600;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* The floating WhatsApp button: a soft ring breathes out now and then, so it reads as live. */
+.whatsapp-fab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 0 rgb(37 211 102 / 0.55);
+  animation: whatsapp-ring 3.2s ease-out infinite;
+}
+
+@keyframes whatsapp-ring {
+  0%,
+  55% {
+    box-shadow: 0 0 0 0 rgb(37 211 102 / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(37 211 102 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-fab::after {
+    animation: none;
+  }
+}
+
+/* The cookie bar rises in once, after the page has settled. */
+.cookie-bar {
+  animation: cookie-bar 480ms cubic-bezier(0.22, 1, 0.36, 1) 600ms both;
+}
+
+@keyframes cookie-bar {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-bar {
+    animation: none;
+  }
+}

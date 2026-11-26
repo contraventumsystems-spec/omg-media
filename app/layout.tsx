@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { CookieBanner } from "@/app/components/cookie-banner";
 import { site } from "@/app/lib/site";
 
 /*
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-background font-sans text-platinum">
         {children}
+        <CookieBanner />
       </body>
     </html>
   );

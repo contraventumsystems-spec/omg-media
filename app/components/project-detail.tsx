@@ -13,11 +13,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { channelChange } from "@/app/components/channel-change";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import type { Pointer, Screen } from "@/app/components/project-tv";
+import { RichText } from "@/app/components/rich-text";
 import { PopText } from "@/app/components/services-story";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 import { capture, channelOf, projectBySlug, SERVICES } from "@/app/lib/projects";
 import { whatsappHref } from "@/app/lib/site";
 import { useReducedMotion } from "@/app/lib/use-reduced-motion";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, DrawSVGPlugin);
 
@@ -27,7 +29,7 @@ const ProjectTv = dynamic(() => import("@/app/components/project-tv"), { ssr: fa
  * One project, /proiecte/[slug].
  *
  *   hero      name and services beside the television playing the site
- *   story     the summary in large centred type, the hook's pop, then the copy
+ *   story     the summary as the hook, the deliverables, then numbered chapter cards
  *   screens   a desktop window and a phone, pinned, both scrolled by the
  *             page's own scroll through the real captures; the bar band and
  *             the three strands drift behind them
@@ -216,23 +218,71 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
         </div>
       </section>
 
-      {/* Story, in the floor hook's voice: large, centred, then the copy. */}
-      <section className="px-5 py-20 md:px-10 md:py-32">
-        <div data-pop-scope className="mx-auto max-w-4xl text-center">
-          <p data-bento-lead className="type-index text-dim">Pe scurt</p>
-          <p data-bento-heading className="type-hook mt-4 text-balance text-eggshell">
-            {project.summary.split(" ").map((word, index) => (
-              <span key={`${word}-${index}`}>
-                <PopText text={word} />{" "}
-              </span>
-            ))}
-            <span data-bento-bars aria-hidden="true" className="sr-only" />
-          </p>
-          {project.story.map((paragraph) => (
-            <p key={paragraph.slice(0, 24)} data-rise className="type-lead mx-auto mt-8 text-platinum">
-              {paragraph}
+      {/*
+        Story, read in three layers: the summary as the hook (large, centred,
+        the site's pop), the deliverables as one scan line, then the chapters
+        as numbered cards. Inside them the copy carries its own marks: bold
+        facts, serif italic accents and one rainbow-underlined line each. Phones stack the cards, left
+        aligned, full width.
+      */}
+      <section aria-labelledby="pe-scurt" className="px-5 py-20 md:px-10 md:py-28">
+        <div className="mx-auto w-full max-w-6xl">
+          <header data-pop-scope className="mx-auto max-w-4xl text-center">
+            <h2 id="pe-scurt" data-bento-lead className="type-index text-dim">
+              Pe scurt
+            </h2>
+            <p data-bento-heading className="type-hook mt-4 text-balance text-eggshell">
+              {project.summary.split(" ").map((word, index) => (
+                <span key={`${word}-${index}`}>
+                  <PopText text={word} />{" "}
+                </span>
+              ))}
+              <span data-bento-bars aria-hidden="true" className="sr-only" />
             </p>
-          ))}
+          </header>
+
+          <div data-rise className="mx-auto mt-10 max-w-4xl md:mt-12">
+            <h3 className="type-index text-center text-dim">Ce am livrat</h3>
+            <ul className="mt-3 flex flex-wrap justify-center gap-2">
+              {project.deliverables.map((item) => (
+                <li
+                  key={item}
+                  className="type-index inline-flex h-9 items-center gap-2 rounded-full border border-eggshell/15 bg-card px-3.5 text-platinum"
+                >
+                  <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: project.color }} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <ol
+            className={cn(
+              "mt-12 grid gap-5 md:mt-16 md:gap-6",
+              project.story.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3",
+            )}
+          >
+            {project.story.map((chapter, index) => {
+              return (
+                <li
+                  key={chapter.title}
+                  data-rise
+                  className="flex flex-col rounded-3xl border-[3px] border-[#15110d] bg-card p-5 shadow-[6px_6px_0_var(--chapter)] md:p-7"
+                  style={{ ["--chapter" as string]: project.color }}
+                >
+                  <p className="type-index flex items-center gap-2 text-dim">
+                    <span style={{ color: project.color }}>{String(index + 1).padStart(2, "0")}</span>
+                    <span aria-hidden="true" className="h-px flex-1 bg-eggshell/10" />
+                  </p>
+                  <h3 className="type-title mt-3 text-eggshell">{chapter.title}</h3>
+                  <span aria-hidden="true" className="mt-3 block h-[3px] w-10 rounded-full" style={{ background: project.color }} />
+                  <p className="type-body mt-4 text-pretty text-platinum md:text-[1.0625rem] md:leading-[1.7]">
+                    <RichText text={chapter.body} />
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </section>
 

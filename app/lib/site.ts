@@ -1,6 +1,7 @@
 /**
- * Site-wide copy and contact details for the homepage.
- * Replace `name` and `phone` in this file only.
+ * Site-wide copy and contact details. Change the phone or the email here
+ * only: WhatsApp, calls, the footer, the contact block, the policies and the
+ * search data all read them from this file.
  * Diacritics use comma-below ș (U+0219) and ț (U+021B).
  */
 
@@ -8,8 +9,10 @@ export const site = {
   name: "OMG",
   /** Canonical origin for metadata, the sitemap and JSON-LD. Set NEXT_PUBLIC_SITE_URL in production. */
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  /** E.164 without the leading plus. Swap in the real WhatsApp number. */
-  phone: "40000000000",
+  /** E.164 without the leading plus: WhatsApp and calls. */
+  phone: "40784281774",
+  phoneDisplay: "+40 784 281 774",
+  email: "contraventumsystems@gmail.com",
   title: "Idei care prind formă — strategie, design și tehnologie",
   description:
     "Agenție de marketing digital: site-uri, conținut foto-video și reclame Google, Meta și TikTok pentru firme care vor cereri, nu doar vizite. Strategie, design și tehnologie, pe același traseu.",
@@ -36,6 +39,9 @@ export const site = {
 
 export const defaultWhatsappText =
   "Bună. Vreau să vedem de unde merită să încep.";
+
+export const telHref = `tel:+${site.phone}`;
+export const mailtoHref = `mailto:${site.email}`;
 
 /** Builds a wa.me link. Extra text is appended for the evaluation form. */
 export function whatsappHref(text: string = defaultWhatsappText) {
