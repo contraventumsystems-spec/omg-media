@@ -5,9 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { FLUX_BARS } from "@/app/components/flow-bento";
+import { LanguageRow } from "@/app/components/language-switcher";
 import { Logo } from "@/app/components/logo";
 import { useIsCurrent } from "@/app/components/nav-links";
 import { WhatsAppIcon } from "@/app/components/whatsapp-icon";
+import { fill, localePath, stripLocale } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
 import { nav, site, telHref, whatsappHref } from "@/app/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +25,9 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isCurrent = useIsCurrent();
+  const locale = useLocale();
+  const { common } = useDict();
+  const t = common.menu;
 
   const show = () => {
     dialog.current?.showModal();
@@ -38,8 +44,8 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
   }, [pathname]);
 
   const items = [
-    { href: "/", label: "Acasă", blurb: "Ce facem, pe scurt.", color: "var(--eggshell)" },
-    ...nav,
+    { href: "/", ...common.pages.home, color: "var(--eggshell)" },
+    ...nav.map((item) => ({ ...item, ...common.pages[item.key] })),
   ];
 
   return (
@@ -56,12 +62,12 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
           <span className="h-[3px] w-3.5 rounded-full bg-flux-magenta" />
           <span className="h-[3px] w-4 rounded-full bg-flux-yellow" />
         </span>
-        <span className="type-index">Meniu</span>
+        <span className="type-index">{t.open}</span>
       </button>
 
       <dialog
         ref={dialog}
-        aria-label="Meniu"
+        aria-label={t.open}
         onClose={() => {
           document.documentElement.classList.remove("menu-open");
           setOpen(false);
@@ -70,7 +76,7 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
       >
         <div className="flex h-full flex-col">
           <div className="flex h-[72px] shrink-0 items-center justify-between px-4">
-            <Link href={home ? "#hero" : "/"} onClick={hide} aria-label="OMG Media, acasă">
+            <Link href={home ? "#hero" : localePath(locale, "/")} onClick={hide} aria-label={common.header.logoHome}>
               <Logo />
             </Link>
             <button
@@ -78,7 +84,7 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
               onClick={hide}
               className="flex h-11 items-center gap-2 rounded-full border border-eggshell/20 px-4 text-eggshell outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70"
             >
-              <span className="type-index">Închide</span>
+              <span className="type-index">{t.close}</span>
               <X aria-hidden="true" className="size-4" />
             </button>
           </div>
@@ -88,14 +94,14 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
             ))}
           </div>
 
-          <nav aria-label="Meniu principal" className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <nav aria-label={t.nav} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
             <ul>
               {items.map((item, index) => {
-                const current = item.href === "/" ? pathname === "/" : isCurrent(item.href);
+                const current = item.href === "/" ? stripLocale(pathname) === "/" : isCurrent(item.href);
                 return (
                   <li key={item.href} className="menu-item border-b border-eggshell/10" style={{ ["--i" as string]: index }}>
                     <Link
-                      href={item.href}
+                      href={localePath(locale, item.href)}
                       onClick={hide}
                       aria-current={current ? "page" : undefined}
                       className="flex items-start gap-4 py-4 outline-none focus-visible:bg-card"
@@ -122,15 +128,18 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
           </nav>
 
           <div className="shrink-0 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div className="mb-3">
+              <LanguageRow />
+            </div>
             <a
-              href={whatsappHref()}
+              href={whatsappHref(common.contact.whatsappDefault)}
               target="_blank"
               rel="noopener noreferrer"
               data-cta="menu"
               className="type-button flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-eggshell text-background shadow-[4px_4px_0_var(--flux-cyan)]"
             >
               <WhatsAppIcon />
-              Hai să vorbim pe WhatsApp
+              {t.whatsapp}
             </a>
             <a
               href={telHref}
@@ -138,7 +147,7 @@ export function MobileMenu({ home = false }: { home?: boolean }) {
               className="type-button mt-3 flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-eggshell/20 text-eggshell"
             >
               <Phone aria-hidden="true" className="size-4" />
-              Sună: {site.phoneDisplay}
+              {fill(t.call, { phone: site.phoneDisplay })}
             </a>
           </div>
         </div>

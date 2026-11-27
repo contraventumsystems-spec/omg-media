@@ -9,30 +9,8 @@
 
 export type RangeId = "zi" | "saptamana" | "luna" | "an";
 
-export type RangeSpec = {
-  id: RangeId;
-  /** Tab label. */
-  tab: string;
-  /** "Vizitatori pe …" */
-  unit: string;
-  /** The period with its article, for "Treci peste o bară ca să vezi …". */
-  the: string;
-  /** "apasă ca …", feminine or masculine. */
-  pin: string;
-};
-
-export const RANGES: readonly RangeSpec[] = [
-  { id: "zi", tab: "Zi", unit: "zi", the: "ziua", pin: "s-o fixezi" },
-  {
-    id: "saptamana",
-    tab: "Săptămână",
-    unit: "săptămână",
-    the: "săptămâna",
-    pin: "s-o fixezi",
-  },
-  { id: "luna", tab: "Lună", unit: "lună", the: "luna", pin: "s-o fixezi" },
-  { id: "an", tab: "An", unit: "an", the: "anul", pin: "să-l fixezi" },
-];
+/** The periods, in tab order. Their names and hints are in the dictionary (services.flow.visitors.ranges). */
+export const RANGES: readonly { id: RangeId }[] = [{ id: "zi" }, { id: "saptamana" }, { id: "luna" }, { id: "an" }];
 
 /** Where visitors arrive from. Google keeps three of its own channels. */
 export const SOURCES = [
@@ -61,14 +39,10 @@ export const CHANNELS = [
 
 export type ChannelId = (typeof CHANNELS)[number]["id"];
 
-export const PAGES = [
-  { path: "/", share: 0.46 },
-  { path: "/renovari-apartamente", share: 0.24 },
-  { path: "/oferta", share: 0.17 },
-  { path: "/contact", share: 0.13 },
-] as const;
+/** Entry pages, by share. The sample paths are in the dictionary (services.flow.entry.paths), in this order. */
+export const PAGES = [{ share: 0.46 }, { share: 0.24 }, { share: 0.17 }, { share: 0.13 }] as const;
 
-/** Average value of one won job, in lei. Sample. */
+/** Average value of one won job, in lei (euro outside Romanian). Sample. */
 const TICKET = 420;
 
 export type ChannelPoint = {
@@ -83,9 +57,9 @@ export type ChannelPoint = {
 export type Point = {
   /** Short label for axes and the bar tooltip. */
   label: string;
-  /** In a sentence: "pe 8 sep", "în martie". */
+  /** In a sentence: "pe 8 sep", "în martie", "on Sep 8". */
   on: string;
-  /** "față de 7 sep". */
+  /** "față de 7 sep", "vs Sep 7". */
   vs: string;
   visitors: number;
   /** Cost per enquiry, in lei. */
@@ -97,55 +71,41 @@ export type Point = {
   pages: number[];
 };
 
-const MONTHS = [
-  "ianuarie",
-  "februarie",
-  "martie",
-  "aprilie",
-  "mai",
-  "iunie",
-  "iulie",
-  "august",
-  "septembrie",
-  "octombrie",
-  "noiembrie",
-  "decembrie",
-];
-const MONTHS_SHORT = [
-  "ian",
-  "feb",
-  "mar",
-  "apr",
-  "mai",
-  "iun",
-  "iul",
-  "aug",
-  "sep",
-  "oct",
-  "nov",
-  "dec",
-];
+/** How a language writes the sample dates. {d} day, {m} short month, {w} week, {month} month, {y} year. */
+export type DateWords = {
+  months: readonly string[];
+  monthsShort: readonly string[];
+  day: { label: string; on: string; vs: string };
+  week: { label: string; on: string; vs: string };
+  month: { on: string; vs: string };
+  year: { on: string; vs: string };
+};
 
 type Label = Pick<Point, "label" | "on" | "vs">;
 
-function labelsFor(range: RangeId): Label[] {
+const put = (template: string, values: Record<string, string | number>) =>
+  template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+
+function labelsFor(range: RangeId, words: DateWords): Label[] {
   switch (range) {
     case "zi":
+      /* 1 to 30 September; the first day compares with 31 August. */
       return Array.from({ length: 30 }, (_, i) => {
         const day = i + 1;
+        const sep = words.monthsShort[8];
         return {
-          label: `${day} sep`,
-          on: `pe ${day} sep`,
-          vs: day === 1 ? "față de 31 aug" : `față de ${day - 1} sep`,
+          label: put(words.day.label, { d: day, m: sep }),
+          on: put(words.day.on, { d: day, m: sep }),
+          vs: day === 1 ? put(words.day.vs, { d: 31, m: words.monthsShort[7] }) : put(words.day.vs, { d: day - 1, m: sep }),
         };
       });
     case "saptamana":
       return Array.from({ length: 12 }, (_, i) => {
         const week = 27 + i;
         return {
-          label: `S${week}`,
-          on: `în săptămâna ${week}`,
-          vs: `față de săptămâna ${week - 1}`,
+          label: put(words.week.label, { w: week }),
+          on: put(words.week.on, { w: week }),
+          vs: put(words.week.vs, { w: week - 1 }),
         };
       });
     case "luna":
@@ -153,15 +113,15 @@ function labelsFor(range: RangeId): Label[] {
       return Array.from({ length: 12 }, (_, i) => {
         const month = (11 + i) % 12;
         return {
-          label: MONTHS_SHORT[month],
-          on: `în ${MONTHS[month]}`,
-          vs: `față de ${MONTHS[(month + 11) % 12]}`,
+          label: words.monthsShort[month],
+          on: put(words.month.on, { month: words.months[month] }),
+          vs: put(words.month.vs, { month: words.months[(month + 11) % 12] }),
         };
       });
     case "an":
       return Array.from({ length: 5 }, (_, i) => {
         const year = 2022 + i;
-        return { label: `${year}`, on: `în ${year}`, vs: `față de ${year - 1}` };
+        return { label: `${year}`, on: put(words.year.on, { y: year }), vs: put(words.year.vs, { y: year - 1 }) };
       });
   }
 }
@@ -203,10 +163,10 @@ function split(total: number, shares: readonly number[], random: () => number) {
   return jittered.map((share) => Math.round((total * share) / sum));
 }
 
-function build(range: RangeId): Point[] {
+function build(range: RangeId, words: DateWords): Point[] {
   const shape = SHAPE[range];
   const random = seeded(shape.seed);
-  const labels = labelsFor(range);
+  const labels = labelsFor(range, words);
   const last = labels.length - 1;
 
   const points = labels.map((label, i) => {
@@ -265,28 +225,15 @@ function build(range: RangeId): Point[] {
   );
 }
 
-export const SERIES: Record<RangeId, Point[]> = {
-  zi: build("zi"),
-  saptamana: build("saptamana"),
-  luna: build("luna"),
-  an: build("an"),
-};
-
-/** 1737 as "1.737": Romanian grouping, without depending on the engine's locale data. */
-export function formatNumber(value: number) {
-  return Math.round(value)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-export function formatPercent(ratio: number) {
-  return `${(ratio * 100).toFixed(1).replace(".", ",")}%`;
-}
-
-/** Romanian counts: "1 client", "7 clienți", "25 de clienți". */
-export function count(value: number, one: string, many: string) {
-  if (value === 1) return `1 ${one}`;
-  const rest = value % 100;
-  const de = rest === 0 || rest >= 20 ? "de " : "";
-  return `${formatNumber(value)} ${de}${many}`;
+/**
+ * Every period, with its dates in the reader's language. The numbers are the
+ * same in every language: the generator is seeded, so server and browser match.
+ */
+export function buildSeries(words: DateWords): Record<RangeId, Point[]> {
+  return {
+    zi: build("zi", words),
+    saptamana: build("saptamana", words),
+    luna: build("luna", words),
+    an: build("an", words),
+  };
 }

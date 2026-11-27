@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
 import { StreamScreen } from "@/app/components/stream-screens";
 import { STREAMS } from "@/app/lib/scene-store";
+import { useDict } from "@/app/i18n/locale-provider";
 import { barColors, services } from "@/app/lib/site";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, MorphSVGPlugin);
@@ -40,10 +41,11 @@ const MARKS: Record<ServiceId, { icon: string; groups: number[] }> = {
   },
 };
 
-const CLOSE =
-  "Un singur flux — firul care le leagă pe toate, de la idee până la cerere.";
-/** The last words of the closing line get the stroke, as "crește." does on the floor. */
-const PAYOFF_WORDS = 3;
+/*
+ * The closing line, "Un singur flux — firul care le leagă pe toate, de la idee
+ * până la cerere.", is in the dictionary (home.story.close): its payoff, the
+ * last words, gets the stroke, as "crește." does on the floor.
+ */
 
 /*
  * The pop is the one the floor line uses (app/lib/floor-hook.ts): a word scales
@@ -181,6 +183,7 @@ export function PopText({ text, stop }: { text: string; stop?: string }) {
  */
 export function ServicesStory() {
   const root = useRef<HTMLDivElement>(null);
+  const { story } = useDict().home;
 
   useGSAP(
     () => {
@@ -325,9 +328,8 @@ export function ServicesStory() {
     { scope: root },
   );
 
-  const closeWords = CLOSE.split(" ");
-  const lead = closeWords.slice(0, -PAYOFF_WORDS);
-  const last = closeWords.slice(-PAYOFF_WORDS);
+  const lead = story.close.lead.split(" ");
+  const last = story.close.payoff.split(" ");
 
   return (
     <div
@@ -348,7 +350,7 @@ export function ServicesStory() {
             /* The services, cut into the lines of MARKS. */
             let taken = 0;
             const lines = MARKS[service.id].groups.map((size) => {
-              const line = service.items.slice(taken, taken + size);
+              const line = story.services[service.id].items.slice(taken, taken + size);
               taken += size;
               return line;
             });
@@ -378,7 +380,7 @@ export function ServicesStory() {
                   id={`servicii-${service.id}`}
                   className={`-mt-[0.12em] text-[length:clamp(2.5rem,min(1.5rem_+_5.5vw,13svh),7rem)] leading-none ${service.accent}`}
                 >
-                  <PopText text={service.label} />
+                  <PopText text={story.services[service.id].label} />
                 </h3>
                 <div className="mt-[1.4svh] text-[length:clamp(1.5rem,min(1rem_+_2.6vw,6.4svh),3.5rem)]">
                   {/* One list per line. A line that has to wrap is split evenly, never one word alone. */}

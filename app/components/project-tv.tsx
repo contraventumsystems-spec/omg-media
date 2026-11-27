@@ -6,6 +6,7 @@ import { type RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef }
 import * as THREE from "three";
 import { buildSet, MODEL_URL } from "@/app/components/cabinet-tv";
 import { PAPER_HEX } from "@/app/lib/bars";
+import { useDict } from "@/app/i18n/locale-provider";
 
 /**
  * The project television: the same set as the homepage cabinet (set 2 of the
@@ -189,6 +190,7 @@ function Television({
   sharp,
   fx,
   onReady,
+  tuning,
 }: {
   screen: Screen;
   pointer: RefObject<Pointer>;
@@ -197,6 +199,8 @@ function Television({
   sharp: boolean;
   fx: RefObject<TvFx> | null;
   onReady?: () => void;
+  /** "Se acordează" and its subtitle, in the page's language: drawn while a site loads. */
+  tuning: { tuning: string; tuningSub: string };
 }) {
   const { scene } = useGLTF(MODEL_URL);
   const group = useRef<THREE.Group>(null);
@@ -287,7 +291,7 @@ function Television({
         if (content !== current.content) pictureCtx.drawImage(image, 0, top, image.naturalWidth, view, 0, 0, w, h);
       } else {
         content = "tuning";
-        if (content !== current.content) paintIdent(pictureCtx, "Se acordează", "Semnalul vine imediat", screen.color);
+        if (content !== current.content) paintIdent(pictureCtx, tuning.tuning, tuning.tuningSub, screen.color);
       }
     }
     if (content !== current.content) {
@@ -345,6 +349,7 @@ export default function ProjectTv({
   fx?: RefObject<TvFx> | null;
   onReady?: () => void;
 }) {
+  const tuning = useDict().work.tv;
   const sharp = useMemo(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
     [],
@@ -367,6 +372,7 @@ export default function ProjectTv({
           sharp={sharp}
           fx={fx}
           onReady={onReady}
+          tuning={tuning}
         />
       </Suspense>
     </Canvas>

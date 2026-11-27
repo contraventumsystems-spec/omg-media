@@ -21,6 +21,8 @@ import { clearPop, drawPop, PopText, readPops } from "@/app/components/services-
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 import { BAR_HEX } from "@/app/lib/bars";
 import { cn } from "@/lib/utils";
+import { fill } from "@/app/i18n/config";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -51,7 +53,7 @@ const ChannelWall = dynamic(() => import("@/app/components/cabinet-tv"), { ssr: 
 
 type Item = { title: string; body: string };
 type Pillar = {
-  id: string;
+  id: "strategie" | "tehnologie" | "design";
   name: string;
   tagline: string;
   color: string;
@@ -60,115 +62,20 @@ type Pillar = {
   extra: Item[];
 };
 
-const PILLARS: Pillar[] = [
-  {
-    id: "strategie",
-    name: "Strategie",
-    tagline: "Direcția clară",
-    color: "#52cbec",
-    bar: "bg-flux-cyan",
-    build: [
-      {
-        title: "Obiective pe care le poți măsura",
-        body: "Stabilim cum arată progresul pentru afacerea ta: cereri, programări, vânzări sau timp câștigat. Le urmărim de la început.",
-      },
-      {
-        title: "Vocea clienților tăi",
-        body: "Întrebările și răspunsurile pe care le primești deja devin material de lucru. Din ele aflăm ce contează pentru cei care cumpără de la tine.",
-      },
-      {
-        title: "Fiecare material are un rol",
-        body: "Oferta, mesajele și canalele se leagă. Fiecare pagină, clip sau campanie are un loc clar în plan.",
-      },
-    ],
-    extra: [
-      {
-        title: "Un buget cu priorități clare",
-        body: "Începem cu ce îți este util acum și construim în etape. Știi ce include fiecare etapă și cât costă.",
-      },
-      {
-        title: "Știi ce se întâmplă",
-        body: "Ai vizibilitate asupra etapelor, costurilor și deciziilor. La predare, primești accesul la conturile și materialele proiectului, împreună cu explicațiile necesare.",
-      },
-      {
-        title: "WhatsApp, când ai timp",
-        body: "Poți lăsa un mesaj oricând. Pentru discuții, găsim împreună un interval potrivit, inclusiv seara sau în weekend.",
-      },
-    ],
-  },
-  {
-    id: "tehnologie",
-    name: "Tehnologie",
-    tagline: "Totul legat",
-    color: "#53d54b",
-    bar: "bg-flux-green",
-    build: [
-      {
-        title: "Site-ul pregătit pentru clienți",
-        body: "Construim sau îmbunătățim paginile de care ai nevoie, cu o ofertă ușor de înțeles și contact simplu de pe telefon.",
-      },
-      {
-        title: "Cereri care ajung unde trebuie",
-        body: "Stabilim unde primești fiecare solicitare și ce urmează după ea. Adăugăm confirmări acolo unde îți sunt utile.",
-      },
-      {
-        title: "Automatizări pentru afacerea ta",
-        body: "Conectăm formularele, programările, mesajele și CRM-ul, astfel încât informația să ajungă unde trebuie. Automatizările le alegem doar acolo unde îți scutesc o treabă repetată.",
-      },
-      {
-        title: "Măsurare de la prima zi",
-        body: "Stabilim ce urmărim înainte de lansare, ca să vezi de unde vin cererile și ce merită îmbunătățit.",
-      },
-    ],
-    extra: [
-      {
-        title: "Actualizări la îndemâna ta",
-        body: "Stabilim ce vrei să poți modifica singur și pregătim soluția potrivită. La predare, îți arătăm cum o folosești.",
-      },
-      {
-        title: "Găzduire potrivită proiectului",
-        body: "Când proiectul permite o variantă gratuită potrivită, o folosim. Orice cost de găzduire, domeniu sau mentenanță este clarificat înainte.",
-      },
-    ],
-  },
-  {
-    id: "design",
-    name: "Design",
-    tagline: "Arată ca tine",
-    color: "#e54bc9",
-    bar: "bg-flux-magenta",
-    build: [
-      {
-        title: "Design făcut pentru brandul tău",
-        body: "Pornim de la identitatea ta și de la felul în care clienții folosesc site-ul. Fiecare pagină îmbină aspectul, conținutul și funcționalitatea.",
-      },
-      {
-        title: "Conținut creat pentru brandul tău",
-        body: "Pregătim textele, filmările, fotografiile și materialele grafice pornind de la oamenii, produsele și serviciile tale.",
-      },
-    ],
-    extra: [
-      {
-        title: "Social media cu un scop",
-        body: "Stabilim ce vrem să obținem și construim conținutul în jurul acelui obiectiv. Urmărim reacțiile, conversațiile și cererile pe care le generează.",
-      },
-      {
-        title: "Conținut care arată cine ești",
-        body: "Punem în valoare oamenii, munca și detaliile care te diferențiază. Le transformăm în texte, fotografii, videoclipuri și design cu personalitate.",
-      },
-    ],
-  },
-];
+/** The three sets, in screen order. Names, taglines and cards are in the dictionary (home.pillars.items). */
+const PILLARS = [
+  { id: "strategie", color: "#52cbec", bar: "bg-flux-cyan" },
+  { id: "tehnologie", color: "#53d54b", bar: "bg-flux-green" },
+  { id: "design", color: "#e54bc9", bar: "bg-flux-magenta" },
+] as const;
 
-
-/** On-screen ident of a pillar, as drawn by the set. */
-const channelOf = (pillar: Pillar, index: number): Channel => ({
+/** On-screen ident of a pillar, as drawn by the set. `label` is "CANAL {n}" in the page's language. */
+const channelOf = (pillar: Pillar, index: number, label: string): Channel => ({
   name: pillar.name,
   tagline: pillar.tagline,
   color: pillar.color,
-  count: `CANAL ${String(index + 1).padStart(2, "0")}`,
+  count: fill(label, { n: String(index + 1).padStart(2, "0") }),
 });
-const IDENTS = PILLARS.map(channelOf);
 
 /**
  * Each set's flight: where it starts (in its own heights below its place), how
@@ -231,6 +138,13 @@ type Arrival = "open" | "flip";
 
 export function PillarCabinet() {
   const root = useRef<HTMLElement>(null);
+  const { home, common } = useDict();
+  const t = home.pillars;
+  const pillars: Pillar[] = useMemo(
+    () => PILLARS.map((pillar) => ({ ...pillar, ...t.items[pillar.id], build: [...t.items[pillar.id].build], extra: [...t.items[pillar.id].extra] })),
+    [t],
+  );
+  const idents = useMemo(() => pillars.map((pillar, index) => channelOf(pillar, index, t.channel)), [pillars, t]);
   const track = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -539,26 +453,25 @@ export function PillarCabinet() {
       PILLARS.map((_, index) => ({
         track: screens[index],
         /* The same ident object every time, so only the pressed set bursts. */
-        channel: powered[index] ? IDENTS[index] : null,
+        channel: powered[index] ? idents[index] : null,
         pose: poses[index],
         pulse: pulses[index],
       })),
     // The refs are stable; only the tuning and the presses change the sets.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [powered, pulses],
+    [powered, pulses, idents],
   );
 
-  const onAir = view === null ? null : PILLARS[view];
-  const heading = "Ce construim, canal cu canal.".split(" ");
-  const lead = heading.slice(0, 2);
-  const payoff = heading.slice(2);
+  const onAir = view === null ? null : pillars[view];
+  const lead = t.heading.lead.split(" ");
+  const payoff = t.heading.payoff.split(" ");
 
   return (
     <section ref={root} id="ce-construim" aria-labelledby="ce-construim-title" className="relative bg-background">
       <div ref={track} className="relative h-[190svh] md:h-[210svh] motion-reduce:h-auto">
         <div className="sticky top-0 z-[2] flex h-svh flex-col px-4 pt-24 pb-16 sm:px-5 md:px-10 md:pt-[5.75rem] md:pb-6 motion-reduce:static motion-reduce:h-auto motion-reduce:py-24">
           <header data-channel-heading className="mx-auto max-w-3xl shrink-0 text-center">
-            <p data-bento-lead className="type-index text-dim">În fiecare pilon</p>
+            <p data-bento-lead className="type-index text-dim">{t.index}</p>
             <h2 id="ce-construim-title" data-bento-heading className="type-h2 mt-2 text-balance text-eggshell">
               {lead.map((word, index) => (
                 <span key={`${word}-${index}`}>
@@ -580,13 +493,13 @@ export function PillarCabinet() {
               </span>
             </h2>
             <p data-bento-lead className="type-lead mx-auto mt-3 hidden text-platinum md:block">
-              Fiecare televizor e un pilon: apasă pe ecran și vezi ce construim în el.
+              {t.lead}
             </p>
           </header>
 
           {/* The three sets. Each is one button: the screen is the hit area, the label names the channel. */}
           <ul className="channel-sets mx-auto mt-4 grid min-h-0 w-full max-w-7xl flex-1 md:mt-2">
-            {PILLARS.map((pillar, index) => (
+            {pillars.map((pillar, index) => (
               <li key={pillar.id} data-set className="channel-set min-h-0">
                 <button
                   ref={(el) => {
@@ -594,7 +507,7 @@ export function PillarCabinet() {
                   }}
                   type="button"
                   aria-haspopup="dialog"
-                  aria-label={`Canalul ${index + 1}, ${pillar.name}: ${pillar.tagline}. Deschide detaliile.`}
+                  aria-label={fill(t.tile, { n: index + 1, name: pillar.name, tagline: pillar.tagline })}
                   onClick={() => open(index)}
                   onPointerMove={(event) => {
                     const box = event.currentTarget.getBoundingClientRect();
@@ -634,7 +547,7 @@ export function PillarCabinet() {
                       )}
                       style={{ ["--tw-shadow-color" as string]: pillar.color }}
                     >
-                      <span className="channel-hint">▶</span> Apasă
+                      <span className="channel-hint">▶</span> {t.press}
                     </span>
                   </span>
                   <span className="channel-label">
@@ -687,21 +600,21 @@ export function PillarCabinet() {
             <div className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-[#15110d] bg-[#1d1813] py-2 pr-2 pl-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
               <p className="type-index flex items-center gap-2 text-dim">
                 <span className="flux-blink size-2 rounded-full bg-flux-red" />
-                În direct · Canal {two((view ?? 0) + 1)}
+                {fill(t.live, { n: two((view ?? 0) + 1) })}
               </p>
               <button
                 type="button"
                 onClick={close}
                 className="type-button inline-flex h-11 items-center gap-2 rounded-full border-2 border-eggshell/15 px-4 text-eggshell motion-safe:transition-colors hover:border-eggshell/40"
               >
-                Închide
+                {common.menu.close}
                 <X aria-hidden="true" className="size-4" />
               </button>
             </div>
 
             <div ref={body} data-lenis-prevent className="channel-scanlines relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-8 md:px-10 md:py-10">
               <div className="mx-auto max-w-4xl text-center">
-                <p data-dialog-index className="type-index text-dim">Pilonul {two((view ?? 0) + 1)} din 03</p>
+                <p data-dialog-index className="type-index text-dim">{fill(t.of, { n: two((view ?? 0) + 1) })}</p>
                 <h3 id="canal-titlu" className="type-h2 mt-2 text-eggshell">
                   <span className="relative inline-block">
                     <PopText text={onAir.name} />
@@ -719,22 +632,22 @@ export function PillarCabinet() {
               </div>
 
               <div className="mx-auto mt-8 grid max-w-4xl gap-8 md:mt-10">
-                <Compartment label="Ce construim" items={onAir.build} color={onAir.color} from={1} />
-                <Compartment label="Ce primești în plus" items={onAir.extra} color={onAir.color} from={onAir.build.length + 1} />
+                <Compartment label={t.build} items={onAir.build} color={onAir.color} from={1} />
+                <Compartment label={t.extra} items={onAir.extra} color={onAir.color} from={onAir.build.length + 1} />
               </div>
               <p data-dialog-lead className="type-note mx-auto mt-6 max-w-4xl text-center text-dim">
-                Nu toate intră în fiecare proiect: oferta ta arată ce alegem împreună.
+                {t.note}
               </p>
             </div>
 
             {/* The remote: the other two channels are one press away. */}
             <nav
-              aria-label="Schimbă canalul"
+              aria-label={t.remote}
               className="shrink-0 border-t-2 border-[#15110d] bg-[#1d1813] px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-4"
             >
-              <p className="type-index mb-2 text-center text-dim">Schimbă canalul</p>
+              <p className="type-index mb-2 text-center text-dim">{t.remote}</p>
               <div className="grid grid-cols-3 gap-2">
-                {PILLARS.map((pillar, index) => {
+                {pillars.map((pillar, index) => {
                   const current = index === view;
                   return (
                     <button

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Archivo, Fraunces, Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { CookieBanner } from "@/app/components/cookie-banner";
+import { htmlLang, locales, ogLocale } from "@/app/i18n/config";
+import { getDictionary, getServerDictionary, localeFromParams } from "@/app/i18n/dictionary";
+import { LocaleProvider } from "@/app/i18n/locale-provider";
 import { site } from "@/app/lib/site";
 
 /*
@@ -40,33 +43,46 @@ const displaySerif = Fraunces({
   axes: ["SOFT", "WONK", "opsz"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
-  title: `${site.title} | ${site.name}`,
-  description: site.description,
-  applicationName: "OMG Media",
-  keywords: [...site.keywords],
-  openGraph: {
-    siteName: "OMG Media",
-    locale: "ro_RO",
-    type: "website",
-    title: site.title,
-    description: site.description,
-    images: [{ url: "/brand/omg-logo.png", width: 804, height: 346, alt: "OMG Media" }],
-  },
-  twitter: { card: "summary_large_image" },
-};
+/** Every language is prerendered; proxy.ts maps the unprefixed Romanian URLs onto /ro. */
+export function generateStaticParams() {
+  return locales.map((lang) => ({ lang }));
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
+  const locale = await localeFromParams(params);
+  const { meta } = getServerDictionary(locale);
+  return {
+    metadataBase: new URL(site.url),
+    title: `${meta.site.title} | ${site.name}`,
+    description: meta.site.description,
+    applicationName: "OMG Media",
+    keywords: [...meta.site.keywords],
+    openGraph: {
+      siteName: "OMG Media",
+      locale: ogLocale[locale],
+      alternateLocale: locales.filter((item) => item !== locale).map((item) => ogLocale[item]),
+      type: "website",
+      title: meta.site.title,
+      description: meta.site.description,
+      images: [{ url: "/brand/omg-logo.png", width: 804, height: 346, alt: "OMG Media" }],
+    },
+    twitter: { card: "summary_large_image" },
+  };
+}
+
+export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
+  const locale = await localeFromParams(params);
   return (
     <html
-      lang="ro"
+      lang={htmlLang[locale]}
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${displayGrotesque.variable} ${displaySerif.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background font-sans text-platinum">
-        {children}
-        <CookieBanner />
+        <LocaleProvider locale={locale} dict={getDictionary(locale)}>
+          {children}
+          <CookieBanner />
+        </LocaleProvider>
       </body>
     </html>
   );

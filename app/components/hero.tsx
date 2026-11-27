@@ -1,6 +1,7 @@
 import { ArcMark } from "@/app/components/arc-mark";
 import { ExploreButton } from "@/app/components/explore-button";
 import { HeroBeat } from "@/app/components/hero-beat";
+import { getCopy } from "@/app/i18n/dictionary";
 import { whatsappHref } from "@/app/lib/site";
 
 /**
@@ -16,7 +17,9 @@ import { whatsappHref } from "@/app/lib/site";
  * address bar sliding away does not move anything.
  * Reduced motion collapses it to one viewport with a still frame of the finished scene.
  */
-export function Hero() {
+export async function Hero() {
+  const { dict } = await getCopy();
+  const t = dict.home.hero;
   return (
     <section id="hero" data-scene-stage className="relative h-[382svh] motion-reduce:h-svh">
       {/* Height of the canvas (the large viewport). Measured, never seen. */}
@@ -42,29 +45,29 @@ export function Hero() {
           <div className="max-w-xl">
             <p className="font-mono flex items-center gap-3 text-xs tracking-[0.14em] text-dim uppercase">
               <ArcMark className="arc-sweep h-4 w-7 text-eggshell" />
-              Strategie. Design. Tehnologie.
+              {t.eyebrow}
             </p>
             <h1 className="mt-5 font-display text-[2.75rem] leading-[0.95] tracking-[-0.03em] text-eggshell min-[390px]:text-[3.25rem] lg:text-7xl xl:text-8xl">
-              <span className="block">Idei care</span>
+              <span className="block">{t.title[0]}</span>
               <span className="block font-serif font-semibold italic">
-                prind formă.
+                {t.title[1]}
               </span>
             </h1>
             <p className="mt-5 max-w-md text-base leading-normal text-platinum md:mt-7 md:text-lg md:leading-relaxed">
-              Strategie, design și tehnologie pe același traseu, de la idee până la cerere.
+              {t.lead}
             </p>
             {/* The canvas measures the bottom of this row: on a phone the pile starts below it. */}
             <div data-hero-copy-end className="mt-8 flex flex-wrap items-center gap-5 md:mt-10">
               <ExploreButton className="inline-flex h-12 cursor-pointer items-center rounded-full bg-eggshell px-6 text-[15px] font-medium text-background transition-colors duration-200 hover:bg-bar-white" />
               <a
-                href={whatsappHref()}
+                href={whatsappHref(dict.common.contact.whatsappDefault)}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-cta="hero"
                 className="group inline-flex h-12 items-center text-[15px] font-medium text-eggshell"
               >
                 <span className="border-b border-white/25 pb-0.5 transition-colors duration-200 group-hover:border-eggshell">
-                  Hai să vorbim
+                  {dict.common.header.cta}
                 </span>
                 <span aria-hidden="true" className="ml-2">
                   ↗

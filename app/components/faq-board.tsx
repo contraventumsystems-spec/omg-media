@@ -6,6 +6,8 @@ import { useRef, useState, type CSSProperties } from "react";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
 import { bentoEntrance, bentoHeadingPop } from "@/app/lib/bento-motion";
+import { fill } from "@/app/i18n/config";
+import { useDict } from "@/app/i18n/locale-provider";
 import { faqGroups, whatsappHref } from "@/app/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -25,8 +27,7 @@ gsap.registerPlugin(useGSAP);
  * Reduced motion: every move is instant, nothing is lost.
  */
 
-const HEADING = "Întrebări înainte să începem.";
-const PAYOFF_WORDS = 1;
+/* The heading, "Întrebări înainte să începem.", is in the dictionary (home.faq.heading). */
 
 const reduced = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -43,6 +44,8 @@ function PlusMark({ className }: { className?: string }) {
 
 export function FaqBoard() {
   const root = useRef<HTMLDivElement>(null);
+  const { home, common } = useDict();
+  const t = home.faq;
   const [open, setOpen] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
 
@@ -184,9 +187,9 @@ export function FaqBoard() {
     setAnswer(key);
   };
 
-  const words = HEADING.split(" ");
-  const lead = words.slice(0, -PAYOFF_WORDS);
-  const payoff = words.slice(-PAYOFF_WORDS);
+  const lead = t.heading.lead.split(" ");
+  const payoff = t.heading.payoff.split(" ");
+  const groups = faqGroups.map((group) => ({ ...group, ...t.groups[group.id] }));
 
   return (
     <section
@@ -196,7 +199,7 @@ export function FaqBoard() {
       <div ref={root} className="mx-auto w-full max-w-5xl">
         <header className="mx-auto max-w-3xl text-center">
           <p data-bento-lead className="type-index text-dim">
-            Întrebări frecvente
+            {t.index}
           </p>
           <h2 data-bento-heading className="type-h2 mt-2 text-balance text-eggshell">
             {lead.map((word, index) => (
@@ -223,12 +226,12 @@ export function FaqBoard() {
             </span>
           </h2>
           <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
-            Răspunsuri clare, grupate pe servicii. Alege domeniul care te interesează.
+            {t.lead}
           </p>
         </header>
 
         <ul className="mt-10 grid gap-3 md:mt-12 md:gap-4">
-          {faqGroups.map((group, groupIndex) => {
+          {groups.map((group, groupIndex) => {
             const isOpen = open === group.id;
             return (
               <li
@@ -264,7 +267,7 @@ export function FaqBoard() {
                         {group.label}
                       </span>
                       <span className="type-note mt-1 block text-dim">
-                        {group.scope} · {group.items.length} întrebări
+                        {group.scope} · {fill(t.count, { n: group.items.length })}
                       </span>
                     </span>
                     <span
@@ -323,15 +326,15 @@ export function FaqBoard() {
         </ul>
 
         <p data-bento-lead className="type-note mt-8 text-center text-dim">
-          Nu găsești întrebarea ta?{" "}
+          {t.missing}{" "}
           <a
-            href={whatsappHref()}
+            href={whatsappHref(common.contact.whatsappDefault)}
             target="_blank"
             rel="noopener noreferrer"
             data-cta="faq"
             className="font-medium text-eggshell underline decoration-eggshell/30 underline-offset-4 hover:decoration-eggshell"
           >
-            Scrie-ne pe WhatsApp
+            {common.contact.whatsapp}
           </a>
         </p>
       </div>

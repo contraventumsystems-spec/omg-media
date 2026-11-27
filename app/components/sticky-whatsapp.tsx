@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WHATSAPP_GREEN, WhatsAppIcon } from "@/app/components/whatsapp-icon";
+import { useDict } from "@/app/i18n/locale-provider";
 import { whatsappHref } from "@/app/lib/site";
 
 /**
@@ -10,6 +11,7 @@ import { whatsappHref } from "@/app/lib/site";
  */
 export function StickyWhatsApp() {
   const [visible, setVisible] = useState(false);
+  const { common } = useDict();
 
   useEffect(() => {
     const hero = document.getElementById("hero");
@@ -27,11 +29,11 @@ export function StickyWhatsApp() {
 
   return (
     <a
-      href={whatsappHref()}
+      href={whatsappHref(common.contact.whatsappDefault)}
       target="_blank"
       rel="noopener noreferrer"
       data-cta="sticky"
-      aria-label="Scrie-ne pe WhatsApp"
+      aria-label={common.contact.whatsapp}
       className="whatsapp-fab fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 grid size-14 place-items-center rounded-full text-white shadow-[0_8px_24px_rgba(0,0,0,0.45)] outline-none focus-visible:ring-4 focus-visible:ring-eggshell/70 md:hidden"
       style={{ background: WHATSAPP_GREEN }}
     >

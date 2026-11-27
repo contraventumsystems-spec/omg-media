@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { holdChannelCut } from "@/app/components/channel-change";
 import { positionAlong, seamOnPath } from "@/app/components/scroll-helper";
+import { useDict } from "@/app/i18n/locale-provider";
 
 /** Speed of the glide in px per second, and the bounds of its length. */
 const SPEED = 1500;
@@ -28,6 +29,7 @@ const GRACE_MS = 250;
 export function ExploreButton({ className }: { className?: string }) {
   const [gliding, setGliding] = useState(false);
   const stop = useRef<(() => void) | null>(null);
+  const t = useDict().common.explore;
 
   useEffect(() => () => stop.current?.(), []);
 
@@ -83,13 +85,13 @@ export function ExploreButton({ className }: { className?: string }) {
   return (
     <>
       <button type="button" onClick={onClick} className={className} aria-describedby="explore-hint">
-        Explorează
+        {t.button}
         <span aria-hidden="true" className="ml-2">
           ↓
         </span>
       </button>
       <span id="explore-hint" className="sr-only">
-        Derulează automat până la servicii. Orice derulare sau tastă o oprește.
+        {t.hint}
       </span>
       {gliding
         ? createPortal(
@@ -100,15 +102,15 @@ export function ExploreButton({ className }: { className?: string }) {
                 className="glide-pill pointer-events-auto flex h-11 items-center gap-3 rounded-full border border-eggshell/20 bg-background/90 pr-4 pl-3 text-eggshell shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-md outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70"
               >
                 <span aria-hidden="true" className="flux-blink size-2 rounded-full bg-flux-red" />
-                <span className="type-index">Derulare automată</span>
-                <span className="type-index rounded-full bg-eggshell px-2.5 py-1 text-background">Oprește</span>
+                <span className="type-index">{t.auto}</span>
+                <span className="type-index rounded-full bg-eggshell px-2.5 py-1 text-background">{t.stop}</span>
               </button>
             </div>,
             document.body,
           )
         : null}
       <span aria-live="polite" className="sr-only">
-        {gliding ? "Derulare automată pornită." : ""}
+        {gliding ? t.started : ""}
       </span>
     </>
   );

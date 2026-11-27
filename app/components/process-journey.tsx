@@ -8,6 +8,7 @@ import { useRef } from "react";
 import { ChannelIcon } from "@/app/components/channel-icons";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import { cn } from "@/lib/utils";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, DrawSVGPlugin);
 
@@ -23,55 +24,14 @@ const LINE = { stroke: INK, strokeWidth: 3, strokeLinejoin: "round" as const, st
  * panel, the content,
  * then campaigns that get cheaper as they get more precise.
  */
+/* Titles, copy and what the client gets are in the dictionary (how.journey.steps), in this order. */
 const STEPS = [
-  {
-    key: "audit",
-    title: "Brief & audit",
-    body: "Ascultăm ce vinzi, cui și unde vrei să ajungi. Apoi facem un audit complet pe nișa ta și pe zona în care activezi.",
-    gets: "Auditul nișei și obiectivele, scrise împreună.",
-    short: "Audit pe nișă",
-    accent: "var(--flux-yellow)",
-  },
-  {
-    key: "client",
-    title: "Studiu & client ideal",
-    body: "Pornim de la KPI și metrici din proiecte care au funcționat, apoi le verificăm pe piața ta: concurența, prețurile și ce caută oamenii.",
-    gets: "Studiul de piață și profilul clientului ideal.",
-    short: "Client ideal",
-    accent: "var(--flux-cyan)",
-  },
-  {
-    key: "strategy",
-    title: "Strategia",
-    body: "Alegem canalele potrivite, Google, Meta sau TikTok, unghiurile de comunicare și bugetul. Totul în jurul valorilor tale, nu din șabloane.",
-    gets: "Strategia pe canale și planul de campanii.",
-    short: "Strategie",
-    accent: "var(--flux-violet)",
-  },
-  {
-    key: "route",
-    title: "Traseul & software-ul",
-    body: "Construim drumul de la reclamă la cerere: landing page, formular, confirmare și panou de cereri, legate între ele.",
-    gets: "Landing page-ul optimizat și fluxul de cereri, gata de lansare.",
-    short: "Landing & software",
-    accent: "var(--flux-green)",
-  },
-  {
-    key: "content",
-    title: "Conținutul",
-    body: "Scriem scenariile, filmăm, fotografiem și facem design după identitatea ta: clipuri, bannere și texte pentru fiecare format.",
-    gets: "Materialele pentru campanii, aprobate de tine.",
-    short: "Conținut",
-    accent: "var(--flux-magenta)",
-  },
-  {
-    key: "campaigns",
-    title: "Campanii & optimizare",
-    body: "Pornim campaniile când temelia e gata, le urmărim atent și le optimizăm: mai multă precizie, costuri mai mici.",
-    gets: "Cereri de la oameni interesați și rapoarte clare.",
-    short: "Campanii",
-    accent: "var(--flux-red)",
-  },
+  { key: "audit", accent: "var(--flux-yellow)" },
+  { key: "client", accent: "var(--flux-cyan)" },
+  { key: "strategy", accent: "var(--flux-violet)" },
+  { key: "route", accent: "var(--flux-green)" },
+  { key: "content", accent: "var(--flux-magenta)" },
+  { key: "campaigns", accent: "var(--flux-red)" },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]["key"];
@@ -337,6 +297,8 @@ const TEXT_IN: gsap.TweenVars[] = [
  * Reduced motion: no pin and no sideways scroll; the panels stack vertically.
  */
 export function ProcessJourney() {
+  const t = useDict().how.journey;
+  const steps = STEPS.map((step, index) => ({ ...step, ...t.steps[index] }));
   const root = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -376,7 +338,7 @@ export function ProcessJourney() {
             onUpdate: (self) => {
               const index = Math.round(self.progress * last);
               counter.textContent =
-                index === last ? "Pe scurt" : `${String(index + 1).padStart(2, "0")} / ${String(STEPS.length).padStart(2, "0")}`;
+                index === last ? t.summary : `${String(index + 1).padStart(2, "0")} / ${String(STEPS.length).padStart(2, "0")}`;
             },
           },
         });
@@ -445,15 +407,15 @@ export function ProcessJourney() {
     <section ref={root} id="drum" aria-labelledby="drum-title" className="overflow-hidden bg-background">
       <div data-stage className="relative flex h-svh flex-col justify-center gap-5 py-20 motion-reduce:h-auto motion-reduce:py-24 md:gap-8">
         <header className="px-5 text-center md:px-10">
-          <p className="font-mono text-xs tracking-[0.14em] text-dim uppercase">Cum lucrăm, pas cu pas</p>
+          <p className="font-mono text-xs tracking-[0.14em] text-dim uppercase">{t.eyebrow}</p>
           <h2
             id="drum-title"
             className="mt-3 font-display text-[length:clamp(1.9rem,1rem+3.2vw,3.75rem)] leading-[1.02] font-bold tracking-[-0.03em] text-eggshell"
           >
-            De la brief <span className="text-flux-cyan">la livrare.</span>
+            {t.title[0]} <span className="text-flux-cyan">{t.title[1]}</span>
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-platinum md:text-base">
-            Un singur partener pentru întregul proces.
+            {t.lead}
           </p>
         </header>
 
@@ -462,7 +424,7 @@ export function ProcessJourney() {
             data-track
             className="flex w-max gap-4 px-[calc((100vw-var(--panel))/2)] [--panel:min(86vw,760px)] md:gap-6 motion-reduce:w-full motion-reduce:flex-col motion-reduce:items-center motion-reduce:px-5"
           >
-            {STEPS.map((step, index) => {
+            {steps.map((step, index) => {
               const Art = ART[step.key];
               return (
                 <li
@@ -485,7 +447,7 @@ export function ProcessJourney() {
                       {step.body}
                     </p>
                     <p data-in className="mt-4 flex gap-2 rounded-2xl border border-eggshell/10 bg-eggshell/[0.04] p-3 text-sm text-eggshell">
-                      <span className="shrink-0 font-bold text-(--accent)">Primești:</span>
+                      <span className="shrink-0 font-bold text-(--accent)">{t.gets}</span>
                       <span>{step.gets}</span>
                     </p>
                   </div>
@@ -503,9 +465,9 @@ export function ProcessJourney() {
               style={{ "--accent": "var(--flux-cyan)" } as React.CSSProperties}
             >
               <div>
-                <p data-in className="font-mono text-xs tracking-[0.14em] text-dim uppercase">Pe scurt</p>
+                <p data-in className="font-mono text-xs tracking-[0.14em] text-dim uppercase">{t.summary}</p>
                 <h3 data-in className="mt-2 font-display text-2xl leading-tight font-bold tracking-[-0.02em] text-eggshell md:text-3xl">
-                  Proces predictibil, <span className="text-flux-cyan">rezultate măsurabile.</span>
+                  {t.summaryTitle[0]} <span className="text-flux-cyan">{t.summaryTitle[1]}</span>
                 </h3>
               </div>
               <div className="relative">
@@ -519,7 +481,7 @@ export function ProcessJourney() {
                   ))}
                 </span>
                 <ol className="relative grid grid-cols-2 gap-2 md:grid-cols-6 md:gap-3">
-                  {STEPS.map((step, index) => (
+                  {steps.map((step, index) => (
                     <li key={step.key} data-chip className="flex flex-col items-center gap-1.5 text-center">
                       <span
                         className="grid size-9 place-items-center rounded-full border-2 border-[#15110d] font-display text-sm font-bold text-background"
@@ -538,7 +500,7 @@ export function ProcessJourney() {
                 href="#ce-construim"
                 className="inline-flex h-11 w-full items-center justify-center self-center rounded-full bg-eggshell px-6 text-sm font-semibold text-background shadow-[4px_4px_0_var(--flux-cyan)] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 md:w-auto"
               >
-                Vezi ce intră în fiecare pilon
+                {t.cta}
               </a>
             </li>
           </ol>

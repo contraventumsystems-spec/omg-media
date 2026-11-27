@@ -18,6 +18,7 @@ export function LegalPage({
 }: {
   index: string;
   title: string;
+  /** The whole line, "Ultima actualizare: 26 noiembrie 2026", in the page's language. */
   updated: string;
   intro: ReactNode;
   children: ReactNode;
@@ -35,7 +36,7 @@ export function LegalPage({
                 <span key={color} className={`h-full flex-1 ${color}`} />
               ))}
             </div>
-            <p className="type-note mt-4 text-dim">Ultima actualizare: {updated}</p>
+            <p className="type-note mt-4 text-dim">{updated}</p>
             <div className="type-lead mt-6 text-platinum">{intro}</div>
           </header>
           <div className="mt-12 grid gap-10">{children}</div>

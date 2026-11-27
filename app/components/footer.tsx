@@ -1,37 +1,41 @@
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { CookieSettingsButton } from "@/app/components/cookie-banner";
+import { localePath } from "@/app/i18n/config";
+import { getCopy } from "@/app/i18n/dictionary";
 import { mailtoHref, nav, site, telHref, whatsappHref } from "@/app/lib/site";
 
 /**
  * The logo, large; the site map, the contact and the mandatory CC BY credit for the Sketchfab TV.
  * https://sketchfab.com/3d-models/technical-difficulties-a1ece2af96c8488e960aab1bb264c37b
  */
-export function Footer() {
+export async function Footer() {
+  const { locale, dict } = await getCopy();
+  const { pages, footer, header, contact } = dict.common;
   return (
     <footer className="bg-background px-5 pt-10 pb-24 md:px-10 md:pb-10">
       <div className="mx-auto grid w-full max-w-6xl gap-8 border-t border-white/10 pt-8 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <Link href="/" aria-label="OMG Media, acasă" className="inline-block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70">
+          <Link href={localePath(locale, "/")} aria-label={header.logoHome} className="inline-block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70">
             <Logo className="h-auto w-[min(80vw,420px)]" />
           </Link>
-          <nav aria-label="Pagini" className="mt-4">
+          <nav aria-label={footer.nav} className="mt-4">
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
               <li>
-                <Link href="/" className="type-nav text-platinum hover:text-eggshell">
-                  Acasă
+                <Link href={localePath(locale, "/")} className="type-nav text-platinum hover:text-eggshell">
+                  {pages.home.label}
                 </Link>
               </li>
               {nav.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="type-nav text-platinum hover:text-eggshell">
-                    {item.label}
+                  <Link href={localePath(locale, item.href)} className="type-nav text-platinum hover:text-eggshell">
+                    {pages[item.key].label}
                   </Link>
                 </li>
               ))}
               <li>
                 <a
-                  href={whatsappHref()}
+                  href={whatsappHref(contact.whatsappDefault)}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-cta="footer"
@@ -54,13 +58,13 @@ export function Footer() {
           </address>
           <ul className="flex flex-wrap gap-x-5 gap-y-1 md:justify-end">
             <li>
-              <Link href="/confidentialitate" className="type-note text-dim hover:text-eggshell">
-                Confidențialitate
+              <Link href={localePath(locale, "/confidentialitate")} className="type-note text-dim hover:text-eggshell">
+                {footer.privacy}
               </Link>
             </li>
             <li>
-              <Link href="/politica-cookies" className="type-note text-dim hover:text-eggshell">
-                Politica cookie
+              <Link href={localePath(locale, "/politica-cookies")} className="type-note text-dim hover:text-eggshell">
+                {footer.cookies}
               </Link>
             </li>
             <li>
@@ -68,7 +72,7 @@ export function Footer() {
             </li>
           </ul>
         <p className="type-note max-w-md text-dim">
-          Model 3D „Technical difficulties” de{" "}
+          {footer.creditBy}{" "}
           <a
             href="https://sketchfab.com/zirodesign"
             className="text-platinum underline decoration-white/20 underline-offset-2"
@@ -77,7 +81,7 @@ export function Footer() {
           >
             ZIRODESIGN
           </a>{" "}
-          pe{" "}
+          {footer.creditOn}{" "}
           <a
             href="https://sketchfab.com/3d-models/technical-difficulties-a1ece2af96c8488e960aab1bb264c37b"
             className="text-platinum underline decoration-white/20 underline-offset-2"
@@ -86,7 +90,7 @@ export function Footer() {
           >
             Sketchfab
           </a>
-          , licență{" "}
+          {footer.creditLicense}{" "}
           <a
             href="https://creativecommons.org/licenses/by/4.0/"
             className="text-platinum underline decoration-white/20 underline-offset-2"

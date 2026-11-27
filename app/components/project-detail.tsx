@@ -16,7 +16,9 @@ import type { Pointer, Screen } from "@/app/components/project-tv";
 import { RichText } from "@/app/components/rich-text";
 import { PopText } from "@/app/components/services-story";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
-import { capture, channelOf, projectBySlug, SERVICES } from "@/app/lib/projects";
+import { fill, localePath } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
+import { capture, channelOf, projectBySlug, SERVICES, withCopy } from "@/app/lib/projects";
 import { whatsappHref } from "@/app/lib/site";
 import { useReducedMotion } from "@/app/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
@@ -36,8 +38,17 @@ const ProjectTv = dynamic(() => import("@/app/components/project-tv"), { ssr: fa
  *   next      the next channel, opened behind a channel change
  */
 export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: string }) {
-  const project = projectBySlug(slug);
-  const next = projectBySlug(nextSlug);
+  const locale = useLocale();
+  const { work } = useDict();
+  const t = work.detail;
+  const project = useMemo(() => {
+    const base = projectBySlug(slug);
+    return base ? withCopy(base, work.projects) : undefined;
+  }, [slug, work.projects]);
+  const next = useMemo(() => {
+    const base = projectBySlug(nextSlug);
+    return base ? withCopy(base, work.projects) : undefined;
+  }, [nextSlug, work.projects]);
   const router = useRouter();
   const root = useRef<HTMLDivElement>(null);
   const pointer = useRef<Pointer>({ x: 0, y: 0 });
@@ -143,7 +154,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
   const openNext = (event: React.MouseEvent) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
-    channelChange(() => router.push(`/proiecte/${next.slug}`));
+    channelChange(() => router.push(localePath(locale, `/proiecte/${next.slug}`)));
   };
 
   return (
@@ -157,8 +168,8 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
         />
         <div className="relative mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-[1fr_1.1fr] md:gap-12">
           <div data-pop-scope className="order-2 md:order-1">
-            <Link href="/proiecte" className="type-nav inline-flex items-center gap-2 text-dim hover:text-eggshell">
-              <ArrowLeft className="size-4" aria-hidden="true" /> Ghidul TV
+            <Link href={localePath(locale, "/proiecte")} className="type-nav inline-flex items-center gap-2 text-dim hover:text-eggshell">
+              <ArrowLeft className="size-4" aria-hidden="true" /> {t.back}
             </Link>
             <p data-bento-lead className="type-index mt-6 text-dim">
               <span style={{ color: project.color }}>{channelOf(project.slug)}</span> · {project.sector}
@@ -187,7 +198,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
                   className="type-index inline-flex items-center gap-2 rounded-full border border-eggshell/15 px-3 py-1.5 text-platinum"
                 >
                   <span className="size-2 rounded-full" style={{ background: SERVICES[service].color }} />
-                  {SERVICES[service].label}
+                  {work.services[service].label}
                 </span>
               ))}
             </div>
@@ -198,16 +209,16 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
                 rel="noopener noreferrer"
                 className="type-button inline-flex h-12 items-center gap-2 rounded-full bg-eggshell px-5 text-background"
               >
-                Vezi {project.domain} <ArrowUpRight className="size-4" aria-hidden="true" />
+                {fill(t.visit, { domain: project.domain })} <ArrowUpRight className="size-4" aria-hidden="true" />
               </a>
               <a
-                href={whatsappHref(`Bună. Am văzut proiectul ${project.name} și vreau ceva asemănător.`)}
+                href={whatsappHref(fill(t.similarMessage, { name: project.name }))}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-cta="proiect-hero"
                 className="type-button inline-flex h-12 items-center rounded-full border border-eggshell/20 px-5 text-eggshell hover:border-eggshell/50"
               >
-                Vreau ceva asemănător
+                {t.similar}
               </a>
             </div>
           </div>
@@ -229,7 +240,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
         <div className="mx-auto w-full max-w-6xl">
           <header data-pop-scope className="mx-auto max-w-4xl text-center">
             <h2 id="pe-scurt" data-bento-lead className="type-index text-dim">
-              Pe scurt
+              {t.summary}
             </h2>
             <p data-bento-heading className="type-hook mt-4 text-balance text-eggshell">
               {project.summary.split(" ").map((word, index) => (
@@ -242,7 +253,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
           </header>
 
           <div data-rise className="mx-auto mt-10 max-w-4xl md:mt-12">
-            <h3 className="type-index text-center text-dim">Ce am livrat</h3>
+            <h3 className="type-index text-center text-dim">{t.delivered}</h3>
             <ul className="mt-3 flex flex-wrap justify-center gap-2">
               {project.deliverables.map((item) => (
                 <li
@@ -287,7 +298,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
       </section>
 
       {/* The site on two screens, scrolled by the reader. */}
-      <section data-screens-track aria-label={`${project.name} pe desktop și pe telefon`} className="relative h-[260svh]">
+      <section data-screens-track aria-label={fill(t.screens, { name: project.name })} className="relative h-[260svh]">
         <div className="sticky top-0 flex h-svh items-center overflow-clip px-5 md:px-10">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div data-screens-band className="absolute top-[30%] left-[-10%] flex h-28 w-[150%] -rotate-3 opacity-[0.08] md:h-44">
@@ -327,7 +338,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
                   <Image
                     data-scroll-shot
                     src={shots.screen}
-                    alt={`${project.name}, pagina principală pe desktop`}
+                    alt={fill(t.desktopAlt, { name: project.name })}
                     width={1024}
                     height={4096}
                     sizes="(min-width: 768px) 768px, 0px"
@@ -343,7 +354,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
                   <Image
                     data-scroll-shot
                     src={shots.phone}
-                    alt={`${project.name}, pagina principală pe telefon`}
+                    alt={fill(t.phoneAlt, { name: project.name })}
                     width={520}
                     height={4096}
                     sizes="300px"
@@ -351,7 +362,7 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
                   />
                 </div>
               </div>
-              <figcaption className="type-index mt-3 text-center text-dim">Pe telefon</figcaption>
+              <figcaption className="type-index mt-3 text-center text-dim">{t.onPhone}</figcaption>
             </figure>
           </div>
         </div>
@@ -360,18 +371,18 @@ export function ProjectDetail({ slug, nextSlug }: { slug: string; nextSlug: stri
       {/* Next channel. */}
       <section className="px-5 py-16 md:px-10 md:py-24">
         <a
-          href={`/proiecte/${next.slug}`}
+          href={localePath(locale, `/proiecte/${next.slug}`)}
           onClick={openNext}
           className="group relative mx-auto grid w-full max-w-6xl overflow-hidden rounded-3xl border border-eggshell/10 bg-card md:grid-cols-[1fr_1.2fr]"
         >
           <div className="relative z-10 flex flex-col justify-center p-6 md:p-10">
             <p className="type-index text-dim">
-              Canalul următor · <span style={{ color: next.color }}>{channelOf(next.slug)}</span>
+              {t.next} · <span style={{ color: next.color }}>{channelOf(next.slug)}</span>
             </p>
             <p className="type-h2 mt-3 text-eggshell">{next.name}</p>
             <p className="type-body mt-2 text-platinum">{next.sector}</p>
             <span className="type-button mt-6 inline-flex h-11 w-fit items-center gap-2 rounded-full bg-eggshell px-5 text-background">
-              Schimbă canalul
+              {t.change}
             </span>
           </div>
           <div className="relative aspect-[16/10] overflow-hidden">

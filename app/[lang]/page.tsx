@@ -15,36 +15,47 @@ import { ScrollHelper } from "@/app/components/scroll-helper";
 import { StickyWhatsApp } from "@/app/components/sticky-whatsapp";
 import { TvBackdrop } from "@/app/components/tv-backdrop";
 import type { Metadata } from "next";
+import { alternatesFor, htmlLang, type Locale, localePath } from "@/app/i18n/config";
+import { getCopy, getDictionary, getServerDictionary, localeFromParams } from "@/app/i18n/dictionary";
 import { services, site } from "@/app/lib/site";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]">): Promise<Metadata> {
+  const locale = await localeFromParams(params);
+  return { alternates: alternatesFor(locale, "/") };
+}
 
 /** Who we are, for search engines: the agency, how to reach it and what it offers. No address until it is final. */
-const organization = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: "OMG Media",
-  url: site.url,
-  logo: `${site.url}/brand/omg-logo.png`,
-  image: `${site.url}/brand/omg-logo.png`,
-  description: site.description,
-  telephone: `+${site.phone}`,
-  email: site.email,
-  areaServed: "RO",
-  inLanguage: "ro-RO",
-  knowsAbout: [...site.keywords],
-  hasOfferCatalog: {
-    "@type": "OfferCatalog",
-    name: "Servicii",
-    itemListElement: services.map((group) => ({
+function organization(locale: Locale) {
+  const dict = getDictionary(locale);
+  const { meta } = getServerDictionary(locale);
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: "OMG Media",
+    url: `${site.url}${localePath(locale, "/")}`,
+    logo: `${site.url}/brand/omg-logo.png`,
+    image: `${site.url}/brand/omg-logo.png`,
+    description: meta.site.description,
+    telephone: `+${site.phone}`,
+    email: site.email,
+    areaServed: ["RO", "EU"],
+    inLanguage: htmlLang[locale],
+    availableLanguage: ["ro", "en", "de", "fr", "es"],
+    knowsAbout: [...meta.site.keywords],
+    hasOfferCatalog: {
       "@type": "OfferCatalog",
-      name: group.label,
-      itemListElement: group.items.map((item) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: item } })),
-    })),
-  },
-};
+      name: dict.common.pages.servicii.label,
+      itemListElement: services.map((group) => {
+        const copy = dict.home.story.services[group.id];
+        return {
+          "@type": "OfferCatalog",
+          name: copy.label,
+          itemListElement: copy.items.map((item) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: item } })),
+        };
+      }),
+    },
+  };
+}
 
 /**
  * Homepage only. The TV sits behind the hero; each section after it is solid.
@@ -55,12 +66,13 @@ const organization = {
  * Hero, Services and Work are one 3D camera move on the fixed canvas, so they
  * stay together and in this order.
  */
-export default function Home() {
+export default async function Home() {
+  const { locale } = await getCopy();
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization(locale)).replace(/</g, "\\u003c") }}
       />
       <TvBackdrop />
       <div className="relative z-10">

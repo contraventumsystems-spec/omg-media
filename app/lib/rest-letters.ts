@@ -1,4 +1,5 @@
 import * as THREE from "three"
+import { sceneCopy } from "@/app/i18n/scene-copy"
 
 /**
  * The letters the pile shows while the page rests at the top, before any scroll.
@@ -13,20 +14,24 @@ import * as THREE from "three"
  * A screen holds the index of its cell and samples it over its own glass.
  */
 
-/** The bottom row. Every word has one letter per tube of that row. */
-export const WORDS = ["IDEI", "SITE", "LOGO", "FILM"] as const
+/**
+ * The bottom row, in the page's language (app/i18n/scene-copy.ts). Every
+ * word has one letter per tube of that row.
+ */
+const words = () => sceneCopy().words
 /** Seconds a word stays up before the row changes channel. */
 export const WORD_SECONDS = 3.4
 
 const ARC = "arc"
-const GLYPHS = [ARC, ..."OMGIDESTLFZ"] as const
+/* Every letter any language puts on a tube: Romanian, then A, H and É for the others. 15 of 16 cells. */
+const GLYPHS = [ARC, ..."OMGIDESTLFZAHÉ"] as const
 /** Cells per side of the atlas. The shader divides by the same number. */
 export const ATLAS_GRID = 4
 const CELL = 192
 
 /** Glyph of each tube in a row, top row first. Null rows keep their static. */
 /* The second row has three tubes, but the pile hides the third: it gets no letter and keeps its static. */
-const ROWS: (readonly string[] | null)[] = [[ARC], ["Z", "I"], ["O", "M", "G"], [...WORDS[0]]]
+const rows = (): (readonly string[] | null)[] => [[ARC], sceneCopy().greet, ["O", "M", "G"], [...words()[0]]]
 /** Index into ROWS of the row that cycles. */
 const WORD_ROW = 3
 
@@ -36,7 +41,7 @@ export function glyphIndex(glyph: string) {
 
 /** Atlas cell for the tube at `column` of `row`, or -1 for a tube with no letter. */
 export function restGlyph(row: number, column: number) {
-  const glyph = ROWS[row]?.[column]
+  const glyph = rows()[row]?.[column]
   return glyph === undefined ? -1 : glyphIndex(glyph)
 }
 
@@ -62,7 +67,8 @@ export function isWordRow(row: number) {
 export function wordGlyph(column: number, time: number) {
   const turn = time / WORD_SECONDS - column * 0.03
   const phase = turn - Math.floor(turn)
-  const word = WORDS[((Math.floor(turn) % WORDS.length) + WORDS.length) % WORDS.length]
+  const list = words()
+  const word = list[((Math.floor(turn) % list.length) + list.length) % list.length]
   const flick = phase < 0.045 ? 1 : phase < 0.075 ? 1 - (phase - 0.045) / 0.03 : 0
   return { glyph: glyphIndex(word[column] ?? ""), flick }
 }

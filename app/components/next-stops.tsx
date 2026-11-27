@@ -11,6 +11,8 @@ import { FLUX_BARS } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 import { capture, projects } from "@/app/lib/projects";
+import { fill, localePath } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
 import { type PageKey, pages } from "@/app/lib/site";
 import { useReducedMotion } from "@/app/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
@@ -78,11 +80,12 @@ function ProjectsScreen({ live }: { live: boolean }) {
 
 /** Bars in the six paints, climbing and settling, with the leu-to-request line over them. */
 function AdsScreen() {
+  const t = useDict().common.nextStops;
   return (
     <span className="absolute inset-0 flex flex-col bg-[#120e0b] p-2.5">
       <span className="type-index flex items-center justify-between text-[0.5625rem] text-dim">
-        <span>lei → cereri</span>
-        <span className="flux-blink text-flux-red">● live</span>
+        <span>{t.ads}</span>
+        <span className="flux-blink text-flux-red">{t.live}</span>
       </span>
       <span className="mt-2 flex flex-1 items-end gap-1.5">
         {FLUX_BARS.map((color, index) => (
@@ -100,9 +103,10 @@ function AdsScreen() {
 
 /** Six steps on a line; a signal runs along and lights each one in turn. */
 function StepsScreen() {
+  const t = useDict().common.nextStops;
   return (
     <span className="absolute inset-0 flex flex-col justify-center bg-[#120e0b] px-3">
-      <span className="type-index text-center text-[0.5625rem] text-dim">brief → livrare</span>
+      <span className="type-index text-center text-[0.5625rem] text-dim">{t.steps}</span>
       <span className="relative mt-3 flex items-center justify-between">
         <span className="absolute inset-x-1 top-1/2 h-px -translate-y-1/2 bg-eggshell/20" />
         <span className="promo-signal absolute top-1/2 left-1 size-2 -translate-y-1/2 rounded-full bg-eggshell shadow-[0_0_10px_var(--eggshell)]" />
@@ -158,12 +162,13 @@ function PromoTv({ color, children }: { color: string; children: React.ReactNode
 /* ---------------------------------------------------------------- promo */
 
 function Promo({ pageKey, side, live }: { pageKey: PageKey; side: number; live: boolean }) {
-  const page = pages[pageKey];
+  const locale = useLocale();
+  const page = { ...pages[pageKey], ...useDict().common.pages[pageKey] };
   const words = page.hook.split(" ");
   const last = words.pop() ?? "";
   return (
     <Link
-      href={page.href}
+      href={localePath(locale, page.href)}
       className={cn(
         "hook-link group flex flex-col items-center gap-6 rounded-3xl p-3 text-center outline-none focus-visible:ring-2 focus-visible:ring-eggshell/60 md:gap-12",
         side ? "md:flex-row-reverse md:text-right" : "md:flex-row md:text-left",
@@ -210,6 +215,7 @@ export function NextStops({ stops }: { stops: PageKey[] }) {
   const root = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
   const [inView, setInView] = useState(false);
+  const { common } = useDict();
 
   /* The screens only run while the block is on screen. */
   useEffect(() => {
@@ -259,7 +265,7 @@ export function NextStops({ stops }: { stops: PageKey[] }) {
               {Array.from({ length: 3 }).flatMap((_, round) =>
                 stops.map((key) => (
                   <span key={`${copy}-${round}-${key}`} className="flex items-center gap-8">
-                    <span>Urmează: {pages[key].label}</span>
+                    <span>{fill(common.nextStops.ticker, { label: common.pages[key].label })}</span>
                     <span>●</span>
                   </span>
                 )),
@@ -288,7 +294,7 @@ export function NextStops({ stops }: { stops: PageKey[] }) {
 
         <h2 id="urmeaza" className="type-index relative mt-12 flex items-center justify-center gap-2 text-dim md:mt-16">
           <span aria-hidden="true" className="flux-blink size-2 rounded-full bg-flux-red" />
-          Urmează pe OMG
+          {common.nextStops.heading}
         </h2>
         <ul className="relative mt-10 grid gap-16 md:mt-14 md:gap-20">
           {stops.map((key, index) => (

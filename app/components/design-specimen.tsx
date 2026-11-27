@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { type CSSProperties, useRef } from "react";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, DrawSVGPlugin);
 
@@ -107,6 +108,7 @@ const grow = (box: Box, by = 3): Box => ({
 });
 
 export function GraphicDesignBoard() {
+  const specimen = useDict().services.creative.specimen;
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -205,7 +207,7 @@ export function GraphicDesignBoard() {
   return (
     <div ref={root} className="flex flex-col gap-3">
       <div className="rounded-2xl border border-eggshell/10 bg-[#120e0b] p-2">
-        <svg viewBox="0 0 240 160" role="img" aria-label="Ilustrație: o planșă de design care se rearanjează ca afiș, postare și banner" className="block h-auto w-full">
+        <svg viewBox="0 0 240 160" role="img" aria-label={specimen.board} className="block h-auto w-full">
           {/* Tool rail. */}
           <rect x="2" y="8" width="22" height="104" rx="6" fill="#1d1813" stroke={INK} strokeWidth="2" />
           <rect data-d="tool" x="4" y={TOOL_Y.select} width="18" height="18" rx="4" fill={PAINT.yellow} />
@@ -231,7 +233,7 @@ export function GraphicDesignBoard() {
           <rect data-d="cta" {...first.cta} rx="6" fill={first.cta.fill} stroke={INK} strokeWidth="2" />
           <g data-d="badge" transform={`translate(${first.badge.x} ${first.badge.y})`}>
             <path d="M0 -15 l4 6 7 -2 -1 7 6 4 -6 4 1 7 -7 -2 -4 6 -4 -6 -7 2 1 -7 -6 -4 6 -4 -1 -7 7 2Z" fill={PAINT.yellow} stroke={INK} strokeWidth="2" strokeLinejoin="round" />
-            <text y="3" textAnchor="middle" fontSize="7" fontWeight="800" fill={INK}>NOU</text>
+            <text y="3" textAnchor="middle" fontSize="7" fontWeight="800" fill={INK}>{specimen.badge}</text>
           </g>
 
           {/* Guides, selection and cursor. */}
@@ -255,7 +257,7 @@ export function GraphicDesignBoard() {
             data-active={index === 0}
             className="rounded-full border border-eggshell/10 px-2.5 py-0.5 text-[11px] text-dim motion-safe:transition-colors motion-safe:duration-300 data-[active=true]:border-flux-violet/60 data-[active=true]:bg-flux-violet/15 data-[active=true]:text-eggshell"
           >
-            {layout.name}
+            {specimen.layouts[index]}
           </span>
         ))}
       </p>
@@ -266,8 +268,7 @@ export function GraphicDesignBoard() {
 /* ================================================================== logo */
 
 const COLORWAYS = [PAINT.yellow, PAINT.cyan, PAINT.magenta] as const;
-const WORDMARK = "marca ta";
-const LOGO_STEPS = ["Construcție", "Simbol", "Aplicații"] as const;
+/* The sample wordmark ("marca ta") and the build steps are in services.creative.specimen. */
 
 /** The sample symbol: an eye in a ring, built from two overlapping circles. */
 const LENS = "M60 34 A30 30 0 0 1 60 86 A30 30 0 0 1 60 34Z";
@@ -285,6 +286,7 @@ function MiniMark({ fill = "var(--mark)", ink = INK, className }: { fill?: strin
 }
 
 export function LogoBuilder() {
+  const specimen = useDict().services.creative.specimen;
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -357,7 +359,7 @@ export function LogoBuilder() {
   return (
     <div ref={root} className="flex flex-col gap-3" style={{ "--mark": COLORWAYS[0] } as CSSProperties}>
       <div className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-2xl border border-eggshell/10 bg-[#120e0b] p-3">
-        <svg viewBox="0 0 120 120" role="img" aria-label="Ilustrație: construcția unui logo, de la grilă la simbol" className="size-24 sm:size-28">
+        <svg viewBox="0 0 120 120" role="img" aria-label={specimen.logo} className="size-24 sm:size-28">
           <g stroke={PAINT.cyan} strokeWidth="0.8" fill="none">
             <path opacity="0.12" data-l="grid" d="M16 16 H104 V104 H16Z" />
             <path opacity="0.12" data-l="grid" d="M16 16 L104 104 M104 16 L16 104" />
@@ -374,14 +376,14 @@ export function LogoBuilder() {
           <circle data-l="dot" cx="60" cy="60" r="8" fill={PAPER} />
         </svg>
         <div className="min-w-0">
-          <p className="font-display text-2xl leading-none font-bold tracking-[-0.03em] text-eggshell sm:text-3xl" aria-label={WORDMARK}>
-            {WORDMARK.split("").map((char, index) => (
+          <p className="font-display text-2xl leading-none font-bold tracking-[-0.03em] text-eggshell sm:text-3xl" aria-label={specimen.wordmark}>
+            {specimen.wordmark.split("").map((char, index) => (
               <span key={`${char}-${index}`} data-l="letter" aria-hidden="true" className="inline-block whitespace-pre">
                 {char}
               </span>
             ))}
           </p>
-          <p className="font-mono mt-1.5 text-[10px] tracking-[0.14em] text-dim uppercase">Simbol · culori · variante</p>
+          <p className="font-mono mt-1.5 text-[10px] tracking-[0.14em] text-dim uppercase">{specimen.caption}</p>
         </div>
       </div>
 
@@ -404,11 +406,11 @@ export function LogoBuilder() {
 
       {/* Where the build is. */}
       <p className="flex flex-wrap gap-1.5" aria-hidden="true">
-        {LOGO_STEPS.map((label, index) => (
+        {specimen.steps.map((label, index) => (
           <span
             key={label}
             data-l="step"
-            data-active={index === LOGO_STEPS.length - 1}
+            data-active={index === specimen.steps.length - 1}
             className="rounded-full border border-eggshell/10 px-2.5 py-0.5 text-[11px] text-dim motion-safe:transition-colors motion-safe:duration-300 data-[active=true]:border-flux-yellow/60 data-[active=true]:bg-flux-yellow/15 data-[active=true]:text-eggshell"
           >
             {label}

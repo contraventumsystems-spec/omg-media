@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -32,16 +33,9 @@ import {
   PopText,
   readPops,
 } from "@/app/components/services-story";
-import {
-  count,
-  formatNumber,
-  formatPercent,
-  PAGES,
-  RANGES,
-  type RangeId,
-  SERIES,
-  SOURCES,
-} from "@/app/lib/flow-data";
+import { fill as fillTemplate, formatCount, formatMoney, formatNumber, formatPercent } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
+import { buildSeries, PAGES, RANGES, type RangeId, SOURCES } from "@/app/lib/flow-data";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -57,41 +51,27 @@ import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-const HEADING =
-  "Fiecare leu se vede, de la reclamă la cerere.";
-/** The last words get the seven-bar stroke, as "crește." does on the floor. */
-const PAYOFF_WORDS = 2;
-
-/** The one-flow feed: one request, every step after it. */
-const STEPS = [
-  "Audit pe nișa și zona ta",
-  "Strategie pe ce a funcționat",
-  "Reclame pe Google, Meta și TikTok",
-  "Landing page optimizată",
-  "Cerere măsurată, gata de răspuns",
-] as const;
+/*
+ * The heading, "Fiecare leu se vede, de la reclamă la cerere.", and every
+ * other line of the section are in the dictionary (services.flow). The
+ * payoff, the last words, gets the seven-bar stroke, as "crește." does on the floor.
+ */
 
 const AD_CHANNELS = [
   {
     id: "google",
     tab: "Google Ads",
     icons: ["google"],
-    body: "Oameni care caută deja ce vinzi, în zona ta. Search, Maps și YouTube, cu cuvinte negative bine puse și fiecare conversie urmărită.",
-    kpis: ["Cost pe cerere", "Cotă de afișare", "Termeni de căutare"],
   },
   {
     id: "meta",
     tab: "Meta Ads",
     icons: ["facebook", "instagram"],
-    body: "Facebook și Instagram, cu audiențe construite pe clientul tău, nu pe ghicit. Creative testate pe rând, pixel și evenimente trimise de pe server.",
-    kpis: ["Cost pe lead", "Rată de click", "Frecvență"],
   },
   {
     id: "tiktok",
     tab: "TikTok Ads",
     icons: ["tiktok"],
-    body: "Video scurt care oprește scroll-ul în primele secunde și aduce cereri, nu doar vizualizări.",
-    kpis: ["Vizionări de 6 s", "Cost pe click", "Cereri din video"],
   },
 ] as const;
 
@@ -105,23 +85,29 @@ export const FLUX_BARS = [
   "bg-flux-violet",
 ] as const;
 
-const FOUNDATION = ["Audiență curată", "Backlinks", "Pagini rapide", "Optimizare continuă"];
-
 /** Inactive bars: a step up from the card, like unpainted cel. */
 const INK = "#2b241c";
 
-const visitorsChart = {
-  visitors: { label: "Vizitatori", color: "var(--flux-cyan)" },
-} satisfies ChartConfig;
-const costChart = {
-  cost: { label: "Cost pe cerere", color: "var(--flux-green)" },
-} satisfies ChartConfig;
-const conversionChart = {
-  value: { label: "Conversie", color: "var(--flux-yellow)" },
-} satisfies ChartConfig;
-const revenueChart = {
-  revenue: { label: "Vânzări", color: "var(--flux-magenta)" },
-} satisfies ChartConfig;
+/**
+ * Fills a sentence. German and French short months end in a full stop
+ * ("30 sept."), so a date at the end of a sentence must not add a second one.
+ */
+const fill = (template: string, values: Record<string, string | number>) =>
+  fillTemplate(template, values).replace(/\.\.(?=\s|$)/g, ".");
+
+/** The charts' series, with their labels in the reader's language. */
+function useCharts() {
+  const charts = useDict().services.flow.charts;
+  return useMemo(
+    () => ({
+      visitorsChart: { visitors: { label: charts.visitors, color: "var(--flux-cyan)" } } satisfies ChartConfig,
+      costChart: { cost: { label: charts.cost, color: "var(--flux-green)" } } satisfies ChartConfig,
+      conversionChart: { value: { label: charts.conversion, color: "var(--flux-yellow)" } } satisfies ChartConfig,
+      revenueChart: { revenue: { label: charts.revenue, color: "var(--flux-magenta)" } } satisfies ChartConfig,
+    }),
+    [charts],
+  );
+}
 
 /* ------------------------------------------------------------------ hooks */
 
@@ -234,13 +220,14 @@ function ShareRow({
   live: boolean;
   delay: number;
 }) {
+  const locale = useLocale();
   return (
     <li>
       <div className="flex items-center gap-2.5 text-sm text-eggshell">
         {icon}
         <span className="truncate">{label}</span>
         <span className="ml-auto font-display font-bold tabular-nums">
-          <Rolling value={value} live={live} format={formatNumber} />
+          <Rolling value={value} live={live} format={(amount) => formatNumber(locale, amount)} />
         </span>
       </div>
       <div className="mt-2 h-1 overflow-hidden rounded-full bg-eggshell/[0.08]">
@@ -292,6 +279,7 @@ function ArrowArt() {
 function FlowFeed() {
   const root = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
+  const { funnel } = useDict().services.flow;
 
   useGSAP(
     () => {
@@ -313,8 +301,8 @@ function FlowFeed() {
               scrub: 0.4,
               onUpdate: (self) => {
                 const next = Math.min(
-                  STEPS.length,
-                  Math.floor(self.progress * (STEPS.length + 1)),
+                  funnel.steps.length,
+                  Math.floor(self.progress * (funnel.steps.length + 1)),
                 );
                 setStep((prev) => (prev === next ? prev : next));
               },
@@ -323,7 +311,7 @@ function FlowFeed() {
         );
       });
       media.add("(prefers-reduced-motion: reduce)", () => {
-        setStep(STEPS.length);
+        setStep(funnel.steps.length);
       });
     },
     { scope: root },
@@ -334,8 +322,8 @@ function FlowFeed() {
       <div className="mb-4 h-1 overflow-hidden rounded-full bg-eggshell/[0.08]">
         <div data-feed-fill className="h-full origin-left rounded-full bg-flux-violet" />
       </div>
-    <ol className="space-y-2" aria-label="Pașii fluxului">
-      {STEPS.map((item, index) => {
+    <ol className="space-y-2" aria-label={funnel.label}>
+      {funnel.steps.map((item, index) => {
         const done = index < step;
         const current = index === step;
         return (
@@ -398,14 +386,20 @@ export function FlowBento() {
   const grid = useRef<HTMLDivElement>(null);
   const live = useSeen(grid);
 
+  const locale = useLocale();
+  const t = useDict().services.flow;
+  const { visitorsChart, costChart, conversionChart, revenueChart } = useCharts();
+  const series = useMemo(() => buildSeries(t.dates), [t.dates]);
+  const num = (value: number) => formatNumber(locale, value);
+  const pct = (ratio: number) => formatPercent(locale, ratio);
   const [range, setRange] = useState<RangeId>("zi");
-  const points = SERIES[range];
+  const points = series[range];
   const last = points.length - 1;
   const [pinned, setPinned] = useState(last);
   const [hover, setHover] = useState<number | null>(null);
   const active = Math.min(hover ?? pinned, last);
   const point = points[active];
-  const spec = RANGES.find((item) => item.id === range) ?? RANGES[0];
+  const spec = t.visitors.ranges[range];
 
   useGSAP(
     () => {
@@ -574,7 +568,7 @@ export function FlowBento() {
         );
     }
     setRange(next);
-    setPinned(SERIES[next].length - 1);
+    setPinned(series[next].length - 1);
     setHover(null);
   };
 
@@ -588,9 +582,8 @@ export function FlowBento() {
   const conversion = point.clients / point.visitors;
   const axis = [points[0].label, points[Math.floor(last / 2)].label, points[last].label];
 
-  const headingWords = HEADING.split(" ");
-  const headingLead = headingWords.slice(0, -PAYOFF_WORDS);
-  const headingPayoff = headingWords.slice(-PAYOFF_WORDS);
+  const headingLead = t.heading.lead.split(" ");
+  const headingPayoff = t.heading.payoff.split(" ");
 
   /*
    * Labels over bars are HTML, placed from the data. Recharts hides its own
@@ -663,9 +656,7 @@ export function FlowBento() {
             </span>
           </h2>
           <p data-flux-lead className="type-lead mx-auto mt-4 text-platinum">
-            Plecăm de la o singură cerere și construim tot traseul logic, pe ce a
-            funcționat în piață și pe ce a funcționat la tine: de la idee la
-            reclamă, la landing page optimizată cu software de ultimă generație.
+            {t.lead}
           </p>
           {/* Sample-data note, kept with the figures below it. */}
           <div data-flux-lead className="mt-6 flex justify-center md:mt-8">
@@ -674,7 +665,7 @@ export function FlowBento() {
               className="type-note h-auto max-w-full gap-2 border-eggshell/15 px-3 py-1 whitespace-normal text-dim"
             >
               <span className="flux-blink size-1.5 rounded-full bg-flux-red" />
-              Date demonstrative · exemplu: firmă de renovări, București
+              {t.sample}
             </Badge>
           </div>
         </header>
@@ -687,23 +678,21 @@ export function FlowBento() {
           <BentoCard accent="var(--flux-yellow)" className="md:col-span-2">
             <CardHeader className="gap-y-3">
               <Badge className="bg-flux-yellow font-bold text-background">
-                Audit complet
+                {t.audit.badge}
               </Badge>
               {/* The one colour accent in this section. */}
               <CardTitle className="type-title text-balance text-eggshell">
-                Fără șabloane. Totul pornește de la{" "}
-                <span className="text-signal-audit">nișa ta</span>.
+                {t.audit.title[0]}{" "}
+                <span className="text-signal-audit">{t.audit.title[1]}</span>
+                {t.audit.title[2]}
               </CardTitle>
               <CardDescription className="type-body text-platinum">
-                Facem audit complet pe nișa ta și pe zona în care activezi. Avem
-                KPI și metrici din proiecte care au funcționat, dar restul se
-                construiește în jurul valorilor tale și al clienților pe care îi
-                vrei.
+                {t.audit.body}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto">
               <Tabs defaultValue="google">
-                <TabsList variant="line" aria-label="Platforme" className="h-auto flex-wrap">
+                <TabsList variant="line" aria-label={t.audit.platforms} className="h-auto flex-wrap">
                   {AD_CHANNELS.map((channel) => (
                     <TabsTrigger
                       key={channel.id}
@@ -726,13 +715,13 @@ export function FlowBento() {
                     className="mt-4 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-300"
                   >
                     <p className="type-body text-platinum">
-                      {channel.body}
+                      {t.audit.channels[channel.id].body}
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-1.5">
                       <span className="type-index mr-1 text-dim">
-                        Urmărim
+                        {t.audit.tracking}
                       </span>
-                      {channel.kpis.map((kpi) => (
+                      {t.audit.channels[channel.id].kpis.map((kpi) => (
                         <Badge
                           key={kpi}
                           variant="outline"
@@ -750,8 +739,8 @@ export function FlowBento() {
           {/* One flow: the request walks every step, then the feed starts over. */}
           <BentoCard accent="var(--flux-violet)" className="md:col-span-2 lg:col-span-1">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Pâlnia" soft="de conversie" />
-              <Lead>O singură cerere de la tine. Tot traseul de la noi, pas cu pas.</Lead>
+              <Title strong={t.funnel.title[0]} soft={t.funnel.title[1]} />
+              <Lead>{t.funnel.lead}</Lead>
             </CardHeader>
             <CardContent>
               <FlowFeed />
@@ -762,24 +751,21 @@ export function FlowBento() {
           <BentoCard accent="var(--flux-cyan)" className="md:col-span-2">
             {/* One column on phones: the period tabs drop under the text. */}
             <CardHeader className="gap-y-1.5 max-sm:has-data-[slot=card-action]:grid-cols-1">
-              <Title strong="Vizitatori" soft={`pe ${spec.unit}`} />
-              <Lead>
-                Treci peste o bară ca să vezi {spec.the}, apasă ca {spec.pin}.
-                Toate cardurile o urmează.
-              </Lead>
+              <Title strong={t.visitors.strong} soft={spec.per} />
+              <Lead>{spec.hint}</Lead>
               <CardAction className="col-start-1 row-span-1 row-start-3 mt-2 justify-self-start sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:justify-self-end max-sm:w-full">
                 <Tabs
                   value={range}
                   onValueChange={(value) => changeRange(value as RangeId)}
                 >
-                  <TabsList variant="line" aria-label="Perioada" className="max-sm:w-full">
+                  <TabsList variant="line" aria-label={t.visitors.period} className="max-sm:w-full">
                     {RANGES.map((item) => (
                       <TabsTrigger
                         key={item.id}
                         value={item.id}
                         className="type-button px-2 text-platinum after:bg-flux-cyan data-active:text-eggshell"
                       >
-                        {item.tab}
+                        {t.visitors.ranges[item.id].tab}
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -789,7 +775,7 @@ export function FlowBento() {
             <CardContent>
               {/* The figure and its date sit clear of the chart. */}
               <p className="type-metric text-eggshell">
-                {formatNumber(point.visitors)}
+                {num(point.visitors)}
               </p>
               <p className="type-note mt-2 text-dim">{point.label}</p>
               <div className="relative mt-6 h-48 sm:h-56 md:mt-8 md:h-64">
@@ -804,7 +790,7 @@ export function FlowBento() {
                   >
                     <span className="block text-[11px] text-dim">{point.label}</span>
                     <span className="block font-display text-[15px] leading-none font-bold text-eggshell tabular-nums">
-                      {formatNumber(point.visitors)}
+                      {num(point.visitors)}
                     </span>
                   </div>
                 ) : null}
@@ -858,18 +844,15 @@ export function FlowBento() {
           {/* Cost per enquiry: a well-laid foundation buys more with less. */}
           <BentoCard accent="var(--flux-green)">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Mai multă precizie," soft="costuri mai mici" />
-              <Lead>
-                Cât a costat o cerere {point.on}. Cu fundația pusă bine, fiecare
-                leu lucrează mai mult.
-              </Lead>
+              <Title strong={t.cost.title[0]} soft={t.cost.title[1]} />
+              <Lead>{fill(t.cost.lead, { on: point.on })}</Lead>
             </CardHeader>
             <CardContent>
               <p className="type-metric flux-ghost text-eggshell">
                 <Rolling
                   value={point.cost}
                   live={live}
-                  format={(value) => `${formatNumber(value)} lei`}
+                  format={(value) => formatMoney(locale, value)}
                 />
               </p>
               <p
@@ -883,11 +866,14 @@ export function FlowBento() {
                 ) : (
                   <TrendingUp className="size-4" aria-hidden="true" />
                 )}
-                {cheaper ? "Mai mic" : "Mai mare"} cu{" "}
-                {Math.round(Math.abs(costChange) * 100)}% {point.vs}
+                {fill(t.cost.delta, {
+                  dir: cheaper ? t.cost.lower : t.cost.higher,
+                  pct: Math.round(Math.abs(costChange) * 100),
+                  vs: point.vs,
+                })}
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {FOUNDATION.map((item) => (
+                {t.cost.foundation.map((item) => (
                   <Badge
                     key={item}
                     variant="outline"
@@ -935,8 +921,8 @@ export function FlowBento() {
           {/* Sources: Google's own channels, then Meta and TikTok. */}
           <BentoCard accent="var(--flux-red)">
             <CardHeader className="gap-y-1.5">
-              <Title strong="De unde" soft="au venit" />
-              <Lead>Cum au găsit site-ul vizitatorii {point.on}.</Lead>
+              <Title strong={t.sources.title[0]} soft={t.sources.title[1]} />
+              <Lead>{fill(t.sources.lead, { on: point.on })}</Lead>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3.5">
@@ -958,11 +944,12 @@ export function FlowBento() {
           {/* Conversion ring. */}
           <BentoCard accent="var(--flux-yellow)">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Rata de" soft="conversie" />
+              <Title strong={t.conversion.title[0]} soft={t.conversion.title[1]} />
               <Lead>
-                {formatNumber(point.clients)} din{" "}
-                {count(point.visitors, "vizitator", "vizitatori")} au trimis o
-                cerere. Inelul e plin la 5%.
+                {fill(t.conversion.lead, {
+                  clients: num(point.clients),
+                  visitors: formatCount(locale, point.visitors, t.conversion.visitor),
+                })}
               </Lead>
             </CardHeader>
             <CardContent className="grid flex-1 place-items-center">
@@ -990,7 +977,7 @@ export function FlowBento() {
                 ) : null}
                 <div className="absolute inset-[18%] grid place-items-center rounded-full bg-[#120e0b] shadow-[inset_0_2px_10px_rgba(0,0,0,0.6)]">
                   <span className="flux-ghost font-display text-4xl font-bold tracking-[-0.04em] text-eggshell tabular-nums">
-                    <Rolling value={conversion} live={live} format={formatPercent} />
+                    <Rolling value={conversion} live={live} format={pct} />
                   </span>
                 </div>
               </div>
@@ -1000,12 +987,8 @@ export function FlowBento() {
           {/* Sales by channel. The best converter takes the paint. */}
           <BentoCard accent="var(--flux-magenta)" className="lg:row-span-2">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Vânzări" soft="pe canal" />
-              <Lead>
-                Cine a cumpărat {point.on}, după canalul prin care a venit prima
-                dată. {best.label} a convertit cel mai bine, la{" "}
-                {formatPercent(best.rate)}.
-              </Lead>
+              <Title strong={t.sales.title[0]} soft={t.sales.title[1]} />
+              <Lead>{fill(t.sales.lead, { on: point.on, best: best.label, rate: pct(best.rate) })}</Lead>
             </CardHeader>
             <CardContent className="relative min-h-80 flex-1">
               {live
@@ -1020,10 +1003,10 @@ export function FlowBento() {
                       }}
                     >
                       <span className="font-display text-[13px] leading-none font-bold text-eggshell tabular-nums sm:text-[15px]">
-                        {formatNumber(channel.revenue)} lei
+                        {formatMoney(locale, channel.revenue)}
                       </span>
                       <span className="mt-1 hidden text-[11px] text-dim sm:block">
-                        {count(channel.clients, "client", "clienți")}
+                        {formatCount(locale, channel.clients, t.sales.client)}
                       </span>
                       <ChannelIcon id={channel.id} className="mt-2 size-[22px]" />
                     </div>
@@ -1070,16 +1053,16 @@ export function FlowBento() {
           {/* Entry pages. */}
           <BentoCard accent="var(--flux-cyan)" className="md:col-span-2">
             <CardHeader className="gap-y-1.5">
-              <Title strong="Pagini" soft="de intrare" />
-              <Lead>Unde a început fiecare vizită {point.on}.</Lead>
+              <Title strong={t.entry.title[0]} soft={t.entry.title[1]} />
+              <Lead>{fill(t.entry.lead, { on: point.on })}</Lead>
             </CardHeader>
             <CardContent className="grid items-center gap-8 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
               <ArrowArt />
               <ul className="space-y-4">
                 {PAGES.map((page, index) => (
                   <ShareRow
-                    key={page.path}
-                    label={page.path}
+                    key={t.entry.paths[index]}
+                    label={t.entry.paths[index]}
                     value={point.pages[index]}
                     max={maxPage}
                     live={live}

@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import type { ResolvedShot } from "@/app/lib/shots"
+import { sceneCopy } from "@/app/i18n/scene-copy"
 
 /**
  * One mask for the hero words. ZGOMOT is the red channel, SEMNAL the green.
@@ -8,8 +9,7 @@ import type { ResolvedShot } from "@/app/lib/shots"
  * Rebuilt only when the framing changes. The canvas is browser-only.
  */
 
-const FLASH = "ZGOMOT"
-const LOCK = "SEMNAL"
+/* ZGOMOT and SEMNAL in Romanian; the page's language picks them (app/i18n/scene-copy.ts). */
 /** Horizontal scale that condenses the loaded grotesque. */
 const CONDENSE = 0.78
 /** A little extra height so a stroke can cross the bezel between two tubes. */
@@ -102,8 +102,8 @@ export function paintSignalWord(
   const ctx = image.getContext("2d", { willReadFrequently: true })
   if (!ctx) return false
 
-  const semnal = placeWord(ctx, LOCK, family, size, band, rects)
-  const zgomot = placeWord(ctx, FLASH, family, size, band, rects)
+  const semnal = placeWord(ctx, sceneCopy().lock, family, size, band, rects)
+  const zgomot = placeWord(ctx, sceneCopy().flash, family, size, band, rects)
   const red = drawMask(ctx, size, family, zgomot)
   const green = drawMask(ctx, size, family, semnal)
   const packed = ctx.createImageData(size.width, size.height)
