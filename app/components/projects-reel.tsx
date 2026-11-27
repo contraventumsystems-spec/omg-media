@@ -24,11 +24,14 @@ import {
   matchesFilter,
   type Project,
   projects,
+  withCopy,
   SERVICES,
 } from "@/app/lib/projects";
 import { whatsappHref } from "@/app/lib/site";
 import { useReducedMotion } from "@/app/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
+import { fill, localePath } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, Observer, ScrollToPlugin);
 
@@ -82,12 +85,14 @@ function colorOf(channel: Channel | undefined) {
   return channel.project.color;
 }
 
-function screenOf(channel: Channel | undefined, count: number): Screen {
+type ReelWords = { introTitle: string; introSub: string; free: string; freeSub: string };
+
+function screenOf(channel: Channel | undefined, count: number, words: ReelWords): Screen {
   if (!channel || channel.kind === "intro") {
-    return { kind: "ident", title: "OMG · Proiecte", subtitle: `${count} canale în emisie`, color: "#52cbec" };
+    return { kind: "ident", title: words.introTitle, subtitle: fill(words.introSub, { n: count }), color: "#52cbec" };
   }
   if (channel.kind === "outro") {
-    return { kind: "ident", title: "Canal liber", subtitle: "Următorul proiect poate fi al tău", color: OUTRO_COLOR };
+    return { kind: "ident", title: words.free, subtitle: words.freeSub, color: OUTRO_COLOR };
   }
   return { kind: "site", src: capture(channel.project.slug).screen, color: channel.project.color };
 }
@@ -182,6 +187,7 @@ function Backdrop({ number, numeral, strands }: {
 }
 
 function ServiceChips({ project }: { project: Project }) {
+  const { work } = useDict();
   return (
     <>
       {project.services.map((service) => (
@@ -190,7 +196,7 @@ function ServiceChips({ project }: { project: Project }) {
           className="type-index inline-flex h-8 items-center gap-1.5 rounded-full border border-eggshell/15 px-2.5 text-platinum"
         >
           <span className="size-1.5 rounded-full" style={{ background: SERVICES[service].color }} />
-          {SERVICES[service].label}
+          {work.services[service].label}
         </span>
       ))}
     </>
@@ -199,13 +205,19 @@ function ServiceChips({ project }: { project: Project }) {
 
 export function ProjectsReel() {
   const router = useRouter();
+  const locale = useLocale();
+  const { work, common } = useDict();
+  const t = work.reel;
   const reduced = useReducedMotion();
   const [picked, setFilter] = useState<Filter | null>(null);
   const linkFilter = useSyncExternalStore(noSubscription, readLinkFilter, () => "toate" as Filter);
   const filter = picked ?? linkFilter;
-  const filters = liveFilters();
+  const filters = liveFilters().map((item) => ({ ...item, label: item.id === "toate" ? work.all : work.services[item.id].plural }));
 
-  const list = useMemo(() => projects.filter((project) => matchesFilter(project, filter)), [filter]);
+  const list = useMemo(
+    () => projects.filter((project) => matchesFilter(project, filter)).map((project) => withCopy(project, work.projects)),
+    [filter, work.projects],
+  );
   const channels = useMemo<Channel[]>(
     () => [{ kind: "intro" }, ...list.map((project) => ({ kind: "project" as const, project })), { kind: "outro" }],
     [list],
@@ -225,7 +237,7 @@ export function ProjectsReel() {
   const timeline = useRef<gsap.core.Timeline | null>(null);
 
   const current = channels[Math.min(shown, channels.length - 1)];
-  const screen = useMemo(() => screenOf(current, projects.length), [current]);
+  const screen = useMemo(() => screenOf(current, projects.length, t), [current, t]);
   const color = colorOf(current);
 
   /* The window is scrolled by script here, so CSS smooth scrolling is off while the reel is mounted. */
@@ -434,7 +446,7 @@ export function ProjectsReel() {
   const open = (event: React.MouseEvent, project: Project) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
-    channelChange(() => router.push(`/proiecte/${project.slug}`));
+    channelChange(() => router.push(localePath(locale, `/proiecte/${project.slug}`)));
   };
 
   const onAir = current?.kind === "project" ? current.project : null;
@@ -452,10 +464,10 @@ export function ProjectsReel() {
             className="reel-beam invisible absolute left-0 h-1 w-full -translate-y-1/2 opacity-0"
           />
           <a
-            href={onAir ? `/proiecte/${onAir.slug}` : "#reel-intro"}
+            href={onAir ? localePath(locale, `/proiecte/${onAir.slug}`) : "#reel-intro"}
             onClick={onAir ? (event) => open(event, onAir) : (event) => event.preventDefault()}
             tabIndex={onAir ? 0 : -1}
-            aria-label={onAir ? `Deschide proiectul ${onAir.name}` : undefined}
+            aria-label={onAir ? fill(t.open, { name: onAir.name }) : undefined}
             className={cn(
               "reel-tv absolute left-1/2 block -translate-x-1/2 -translate-y-1/2",
               onAir ? "pointer-events-auto cursor-pointer" : "pointer-events-none",
@@ -488,17 +500,17 @@ export function ProjectsReel() {
               {channel.kind === "intro" ? (
                 <>
                   <p data-bento-lead className="type-index text-dim">
-                    Portofoliu · {projects.length} proiecte
+                    {fill(t.index, { n: projects.length })}
                   </p>
                   <h1 data-bento-heading className="type-h2 mt-2 text-balance text-eggshell md:text-pretty">
-                    {"Primele proiecte".split(" ").map((word) => (
+                    {t.heading.lead.split(" ").map((word) => (
                       <span key={word}>
                         <PopText text={word} />{" "}
                       </span>
                     ))}
                     <span className="relative inline-block whitespace-nowrap">
                       <span className="font-serif font-semibold">
-                        <PopText text="semnate OMG" stop="text-flux-green" />
+                        <PopText text={t.heading.payoff} stop="text-flux-green" />
                       </span>
                       <span
                         data-bento-bars
@@ -512,11 +524,10 @@ export function ProjectsReel() {
                     </span>
                   </h1>
                   <p data-bento-lead className="type-lead mx-auto mt-3 max-w-2xl text-platinum">
-                    Suntem o echipă nouă. Tot ce rulează aici am construit noi, de la zero, sub numele
-                    nostru. Lista crește cu fiecare client.
+                    {t.lead}
                   </p>
                   {filters.length > 2 ? (
-                    <div data-bento-lead className="mt-3 flex flex-wrap justify-center gap-1.5 md:mt-4" role="radiogroup" aria-label="Filtrează după serviciu">
+                    <div data-bento-lead className="mt-3 flex flex-wrap justify-center gap-1.5 md:mt-4" role="radiogroup" aria-label={t.filter}>
                       {filters.map((item) => (
                         <button
                           key={item.id}
@@ -539,7 +550,7 @@ export function ProjectsReel() {
                   ) : null}
                   {/* On phones the filter row takes the hint's place, so the intro stays clear of the set. */}
                   <div data-bento-lead className={cn("mt-5 flex-col items-center gap-2 md:mt-6 md:flex", filters.length > 2 ? "hidden" : "flex")}>
-                    <span className="type-index text-dim">Glisează ca să schimbi canalul</span>
+                    <span className="type-index text-dim">{t.swipe}</span>
                     <span className="scroll-hint relative h-8 w-px overflow-hidden bg-eggshell/15" />
                   </div>
                 </>
@@ -559,47 +570,47 @@ export function ProjectsReel() {
                   <div data-reel-in className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <ServiceChips project={channel.project} />
                     <a
-                      href={`/proiecte/${channel.project.slug}`}
+                      href={localePath(locale, `/proiecte/${channel.project.slug}`)}
                       onClick={(event) => open(event, channel.project)}
                       className="type-button inline-flex h-11 items-center rounded-full bg-eggshell px-5 text-background"
                     >
-                      Vezi proiectul
+                      {t.see}
                     </a>
                     <a
                       href={channel.project.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={`${channel.project.domain}, site live`}
+                      aria-label={fill(t.liveLabel, { domain: channel.project.domain })}
                       className="type-button inline-flex h-11 items-center gap-1.5 rounded-full border border-eggshell/20 px-4 text-eggshell hover:border-eggshell/50"
                     >
-                      Live <ArrowUpRight className="size-4" aria-hidden="true" />
+                      {t.live} <ArrowUpRight className="size-4" aria-hidden="true" />
                     </a>
                   </div>
                 </>
               ) : (
                 <>
                   <p data-reel-in className="type-index text-dim">
-                    Canal liber
+                    {t.free}
                   </p>
                   <h2 data-reel-in className="type-h2 mt-2 text-balance text-eggshell">
-                    Următorul canal poate fi <span className="font-serif font-semibold">al tău</span>
+                    {t.outroTitle[0]} <span className="font-serif font-semibold">{t.outroTitle[1]}</span>
                     <span className="text-flux-yellow">.</span>
                   </h2>
                   <div data-reel-in className="mt-5 flex flex-wrap items-center justify-center gap-2">
                     <a
-                      href={whatsappHref("Bună. Vreau să fiu următorul proiect OMG.")}
+                      href={whatsappHref(t.outroMessage)}
                       target="_blank"
                       rel="noopener noreferrer"
                       data-cta="proiecte-outro"
                       className="type-button inline-flex h-11 items-center rounded-full bg-eggshell px-5 text-background"
                     >
-                      Scrie-ne pe WhatsApp
+                      {common.contact.whatsapp}
                     </a>
                     <Link
-                      href="/cum-lucram"
+                      href={localePath(locale, "/cum-lucram")}
                       className="type-button inline-flex h-11 items-center rounded-full border border-eggshell/20 px-5 text-eggshell hover:border-eggshell/50"
                     >
-                      Cum lucrăm
+                      {common.pages.cumLucram.label}
                     </Link>
                   </div>
                 </>

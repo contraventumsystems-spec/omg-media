@@ -2,6 +2,7 @@
 
 import * as THREE from "three"
 import { STREAMS } from "@/app/lib/scene-store"
+import { sceneCopy } from "@/app/i18n/scene-copy"
 
 /**
  * The two-line hook that lies on the empty floor in beat 2, between the spill
@@ -16,17 +17,34 @@ import { STREAMS } from "@/app/lib/scene-store"
  * the plain numbers in hookRig, and the scene copies them onto the planes in the
  * same frame it draws. Scrubbing back reverses it for free.
  */
-export const HOOK_LINES = ["Începem simplu.", "Construim ca să poți crește."] as const
+/** "Începem simplu. Construim ca să poți crește." in Romanian; the page's language picks it (app/i18n/scene-copy.ts). */
+const hookLines = () => sceneCopy().hook
 
-const WORDS = HOOK_LINES.flatMap((text, line) =>
-  text.split(" ").map((word, index) => ({ word, line, index })),
-)
-
+type HookWordSpec = { word: string; line: number; index: number }
 const REST = { scale: 0.3, alpha: 0, lock: 0 }
+type WordState = { line: number; index: number } & typeof REST
+
+let builtFor: readonly string[] | null = null
+let specs: HookWordSpec[] = []
+let states: WordState[] = []
+
+/** The words of the current language, built once per language. */
+function hookWords() {
+  const lines = hookLines()
+  if (builtFor !== lines) {
+    builtFor = lines
+    specs = lines.flatMap((text, line) => text.split(" ").map((word, index) => ({ word, line, index })))
+    states = specs.map(({ line, index }) => ({ line, index, ...REST }))
+  }
+  return specs
+}
 
 /** Written by GSAP, read by the scene. `lock` is 0 with the ghosts apart, 1 as one white word. */
 export const hookRig = {
-  words: WORDS.map(({ line, index }) => ({ line, index, ...REST })),
+  get words() {
+    hookWords()
+    return states
+  },
   /** The paint stroke under the last word, 0 to 1 from its left end. */
   rule: 0,
   /** The last word outgrows the rest: 0 at the common size, 1 fully grown. */
@@ -121,19 +139,20 @@ export function paintFloorHook(): boolean {
   if (!family) return false
   const font = `700 ${FONT_PX}px "${family}"`
   /* The check is made with the real text, so the Romanian subset is loaded before the draw. */
-  if (!document.fonts.check(font, HOOK_LINES.join(""))) {
-    void document.fonts.load(font, HOOK_LINES.join(""))
+  const lines = hookLines()
+  if (!document.fonts.check(font, lines.join(""))) {
+    void document.fonts.load(font, lines.join(""))
     return false
   }
 
   const measure = document.createElement("canvas").getContext("2d")
   if (!measure) return false
   measure.font = font
-  const linePx = HOOK_LINES.map((text) => measure.measureText(text).width)
+  const linePx = lines.map((text) => measure.measureText(text).width)
   widestPx = Math.max(...linePx)
 
-  for (const { word, line, index } of WORDS) {
-    const text = HOOK_LINES[line]
+  for (const { word, line, index } of hookWords()) {
+    const text = lines[line]
     const before = text.split(" ").slice(0, index).join(" ")
     /* Measured with the gap, so the words sit where the whole line would put them. */
     const start = index === 0 ? 0 : measure.measureText(`${before} `).width

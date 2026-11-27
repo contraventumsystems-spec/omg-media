@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { useRef } from "react";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
+import { useDict } from "@/app/i18n/locale-provider";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 
 /**
@@ -13,12 +14,11 @@ import { bentoHeadingPop } from "@/app/lib/bento-motion";
  * Replaces the old "Despre" block, whose order list repeated the six steps.
  */
 
-const HEADING = "Datele decid. Imaginea convinge.";
-/** The last word gets the seven-bar stroke. */
-const PAYOFF_WORDS = 1;
+/* "Datele decid. Imaginea convinge.": the payoff, the last word, gets the seven-bar stroke. Copy in services.bridge. */
 
 export function ProofBridge() {
   const root = useRef<HTMLDivElement>(null);
+  const t = useDict().services.bridge;
 
   useGSAP(
     () => {
@@ -27,9 +27,8 @@ export function ProofBridge() {
     { scope: root },
   );
 
-  const words = HEADING.split(" ");
-  const lead = words.slice(0, -PAYOFF_WORDS);
-  const payoff = words.slice(-PAYOFF_WORDS);
+  const lead = t.heading.lead.split(" ");
+  const payoff = t.heading.payoff.split(" ");
 
   return (
     <section className="bg-background px-5 py-20 md:px-10 md:py-28">
@@ -61,7 +60,7 @@ export function ProofBridge() {
           </span>
         </h2>
         <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
-          Deciziile pornesc din date, iar producția de conținut le transformă în rezultate vizibile.
+          {t.lead}
         </p>
       </div>
     </section>

@@ -7,31 +7,37 @@ import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
 import { ProjectDetail } from "@/app/components/project-detail";
 import { StickyWhatsApp } from "@/app/components/sticky-whatsapp";
-import { capture, nextProject, projectBySlug, projects, SERVICES } from "@/app/lib/projects";
+import { alternatesFor, fill, htmlLang, isLocale, localePath, ogLocale } from "@/app/i18n/config";
+import { getDictionary, getServerDictionary, localeFromParams } from "@/app/i18n/dictionary";
+import { capture, nextProject, projectBySlug, projects, withCopy } from "@/app/lib/projects";
 import { site } from "@/app/lib/site";
 
 export function generateStaticParams() {
   return projects.map((project) => ({ slug: project.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/proiecte/[slug]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/[lang]/proiecte/[slug]">): Promise<Metadata> {
+  const locale = await localeFromParams(params);
   const { slug } = await params;
-  const project = projectBySlug(slug);
-  if (!project) return {};
-  const services = project.services.map((service) => SERVICES[service].label).join(", ");
+  const base = projectBySlug(slug);
+  if (!base) return {};
+  const { work } = getDictionary(locale);
+  const { meta } = getServerDictionary(locale);
+  const project = withCopy(base, work.projects);
+  const services = project.services.map((service) => work.services[service].label).join(", ");
   const title = `${project.name}: ${services}`;
-  const description = `${project.summary} ${services} de ${site.name}.`;
-  const url = `/proiecte/${project.slug}`;
+  const description = fill(meta.project.description, { summary: project.summary, services, name: site.name });
+  const alternates = alternatesFor(locale, `/proiecte/${project.slug}`);
   return {
     title: `${title} | ${site.name}`,
     description,
-    alternates: { canonical: url },
+    alternates,
     openGraph: {
       title,
       description,
-      url,
+      url: alternates.canonical,
       type: "article",
-      locale: "ro_RO",
+      locale: ogLocale[locale],
       images: [{ url: capture(project.slug).cover, width: 1200, height: 750, alt: project.name }],
     },
   };
@@ -40,15 +46,18 @@ export async function generateMetadata({ params }: PageProps<"/proiecte/[slug]">
 /**
  * The slug is URL data, so it is read inside Suspense: the header, the
  * closing block and the footer stay in the shared App Shell and the
- * navigation is instant. Every slug is prerendered, so a direct visit gets
- * the whole page at once.
+ * navigation is instant. Every slug is prerendered in every language, so a
+ * direct visit gets the whole page at once.
  */
-async function ProjectBody({ params }: Pick<PageProps<"/proiecte/[slug]">, "params">) {
-  const { slug } = await params;
-  const project = projectBySlug(slug);
-  if (!project) notFound();
+async function ProjectBody({ params }: Pick<PageProps<"/[lang]/proiecte/[slug]">, "params">) {
+  const { slug, lang } = await params;
+  const base = projectBySlug(slug);
+  if (!base || !isLocale(lang)) notFound();
+  const locale = lang;
+  const { work, common } = getDictionary(locale);
+  const project = withCopy(base, work.projects);
   const next = nextProject(project.slug);
-  const pageUrl = `${site.url}/proiecte/${project.slug}`;
+  const pageUrl = `${site.url}${localePath(locale, `/proiecte/${project.slug}`)}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -59,16 +68,16 @@ async function ProjectBody({ params }: Pick<PageProps<"/proiecte/[slug]">, "para
         url: pageUrl,
         description: project.summary,
         image: `${site.url}${capture(project.slug).cover}`,
-        inLanguage: "ro-RO",
+        inLanguage: htmlLang[locale],
         creator: { "@type": "Organization", name: site.name, url: site.url },
         about: { "@type": "Organization", name: project.name, url: project.url },
-        keywords: project.services.map((service) => SERVICES[service].label).join(", "),
+        keywords: project.services.map((service) => work.services[service].label).join(", "),
       },
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Acasă", item: site.url },
-          { "@type": "ListItem", position: 2, name: "Proiecte", item: `${site.url}/proiecte` },
+          { "@type": "ListItem", position: 1, name: common.pages.home.label, item: `${site.url}${localePath(locale, "/")}` },
+          { "@type": "ListItem", position: 2, name: common.pages.proiecte.label, item: `${site.url}${localePath(locale, "/proiecte")}` },
           { "@type": "ListItem", position: 3, name: project.name, item: pageUrl },
         ],
       },
@@ -91,7 +100,7 @@ function ProjectFallback() {
   return <div aria-hidden="true" className="min-h-svh" />;
 }
 
-export default function ProjectPage({ params }: PageProps<"/proiecte/[slug]">) {
+export default function ProjectPage({ params }: PageProps<"/[lang]/proiecte/[slug]">) {
   return (
     <>
       <Header />

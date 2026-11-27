@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
 import { buildHeroTimeline, HERO_BEAT, heroRig, resetHeroRig } from "@/app/lib/hero-rig";
 import { useSceneStore } from "@/app/lib/scene-store";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -17,10 +18,11 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
 
 /** The story of the beat: static, then a signal, then a shape. */
+/* Zgomot, Semnal, Formă: the labels are in the dictionary (home.hero.stages). */
 const STAGES = [
-  { label: "Zgomot", from: 0 },
-  { label: "Semnal", from: HERO_BEAT.tuneStart },
-  { label: "Formă", from: HERO_BEAT.pourStart },
+  { from: 0 },
+  { from: HERO_BEAT.tuneStart },
+  { from: HERO_BEAT.pourStart },
 ] as const;
 
 function stageAt(progress: number) {
@@ -48,6 +50,7 @@ function stageAt(progress: number) {
  */
 export function HeroBeat() {
   const root = useRef<HTMLDivElement>(null);
+  const { hero } = useDict().home;
 
   useGSAP(
     () => {
@@ -168,13 +171,13 @@ export function HeroBeat() {
             <ol className="font-mono flex gap-5 text-[11px] tracking-[0.14em] uppercase md:gap-7 md:text-xs">
               {STAGES.map((stage, index) => (
                 <li
-                  key={stage.label}
+                  key={stage.from}
                   data-hero-stage
                   data-active={index === 0}
                   className="flex items-baseline gap-2 text-dim transition-colors duration-200 data-[active=true]:text-eggshell"
                 >
                   <span className="tabular-nums opacity-60">0{index + 1}</span>
-                  {stage.label}
+                  {hero.stages[index]}
                 </li>
               ))}
             </ol>
@@ -189,7 +192,7 @@ export function HeroBeat() {
             data-hero-hint
             className="font-mono absolute bottom-6 left-5 flex items-center gap-3 text-[11px] tracking-[0.14em] text-platinum uppercase md:bottom-8 md:left-10 md:text-xs"
           >
-            Derulează
+            {hero.scroll}
             <span className="scroll-hint relative block h-8 w-px overflow-hidden bg-white/15" />
           </p>
         </div>

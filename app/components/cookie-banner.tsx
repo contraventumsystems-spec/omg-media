@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { localePath } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
 import { onConsentOpen, openConsent, saveChoice, useConsent, useHydrated } from "@/app/lib/consent";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,8 @@ export function CookieBanner() {
   const choice = useConsent();
   const [reopened, setReopened] = useState(false);
   const accept = useRef<HTMLButtonElement>(null);
+  const locale = useLocale();
+  const t = useDict().common.cookie;
 
   useEffect(
     () =>
@@ -39,7 +43,7 @@ export function CookieBanner() {
   return (
     <section
       role="region"
-      aria-label="Cookie-uri"
+      aria-label={t.title}
       className="cookie-bar fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-3xl overflow-hidden rounded-2xl border-[3px] border-[#15110d] bg-card shadow-[5px_5px_0_var(--flux-yellow)] md:inset-x-6"
     >
       <div aria-hidden="true" className="flex h-1">
@@ -51,11 +55,11 @@ export function CookieBanner() {
         <p className="type-note flex-1 text-platinum">
           <span className="type-index mr-2 inline-flex items-center gap-1.5 text-eggshell">
             <span aria-hidden="true" className="flux-blink size-1.5 rounded-full bg-flux-red" />
-            Cookie-uri
+            {t.title}
           </span>
-          Folosim doar ce e necesar ca site-ul să funcționeze. Fără reclame, fără urmărire.{" "}
-          <Link href="/politica-cookies" className="text-eggshell underline decoration-eggshell/30 underline-offset-2 hover:decoration-eggshell">
-            Detalii
+          {t.text}{" "}
+          <Link href={localePath(locale, "/politica-cookies")} className="text-eggshell underline decoration-eggshell/30 underline-offset-2 hover:decoration-eggshell">
+            {t.details}
           </Link>
         </p>
         <div className="flex shrink-0 gap-2">
@@ -64,7 +68,7 @@ export function CookieBanner() {
             onClick={() => answer("declined")}
             className="type-button h-10 flex-1 rounded-full border border-eggshell/25 px-5 text-eggshell outline-none hover:border-eggshell/60 focus-visible:ring-2 focus-visible:ring-eggshell/70 md:flex-none"
           >
-            Refuz
+            {t.decline}
           </button>
           <button
             ref={accept}
@@ -72,7 +76,7 @@ export function CookieBanner() {
             onClick={() => answer("accepted")}
             className="type-button h-10 flex-1 rounded-full bg-eggshell px-5 text-background outline-none focus-visible:ring-2 focus-visible:ring-flux-cyan md:flex-none"
           >
-            Accept
+            {t.accept}
           </button>
         </div>
       </div>
@@ -82,9 +86,10 @@ export function CookieBanner() {
 
 /** "Setări cookie", for the footer: opens the bar again so the choice can change. */
 export function CookieSettingsButton({ className }: { className?: string }) {
+  const t = useDict().common.cookie;
   return (
     <button type="button" onClick={openConsent} className={className}>
-      Setări cookie
+      {t.settings}
     </button>
   );
 }

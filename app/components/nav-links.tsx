@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { localePath, stripLocale } from "@/app/i18n/config";
+import { useDict, useLocale } from "@/app/i18n/locale-provider";
 import { nav } from "@/app/lib/site";
 import { cn } from "@/lib/utils";
 
-/** True when `href` is the page shown, or a page under it (/proiecte/x). */
+/** True when `href` (a Romanian path) is the page shown, or a page under it (/proiecte/x), in any language. */
 export function useIsCurrent() {
-  const pathname = usePathname();
+  const pathname = stripLocale(usePathname());
   return (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -18,6 +20,8 @@ export function useIsCurrent() {
  */
 export function NavLinks() {
   const isCurrent = useIsCurrent();
+  const locale = useLocale();
+  const { common } = useDict();
   return (
     <ul className="flex items-center gap-1 lg:gap-3">
       {nav.map((item, index) => {
@@ -25,7 +29,7 @@ export function NavLinks() {
         return (
           <li key={item.href}>
             <Link
-              href={item.href}
+              href={localePath(locale, item.href)}
               aria-current={current ? "page" : undefined}
               className={cn(
                 "group relative flex h-11 items-center gap-2 rounded-full px-3 outline-none focus-visible:ring-2 focus-visible:ring-eggshell/70",
@@ -36,7 +40,7 @@ export function NavLinks() {
               <span aria-hidden="true" className={cn("type-index text-[0.625rem]", current ? "text-[var(--page)]" : "text-dim")}>
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <span className="type-nav">{item.label}</span>
+              <span className="type-nav">{common.pages[item.key].label}</span>
               <span
                 aria-hidden="true"
                 className={cn(

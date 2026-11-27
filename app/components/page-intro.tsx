@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { useRef } from "react";
 import { FLUX_BARS } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
+import { useDict } from "@/app/i18n/locale-provider";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 
 /**
@@ -30,6 +31,7 @@ export function PageIntro({
   jumps: { href: string; label: string }[];
 }) {
   const root = useRef<HTMLElement>(null);
+  const { common } = useDict();
 
   useGSAP(
     () => {
@@ -73,7 +75,7 @@ export function PageIntro({
         <p data-bento-lead className="type-lead mx-auto mt-5 text-platinum">
           {text}
         </p>
-        <nav data-bento-lead aria-label="Pe această pagină" className="mt-8">
+        <nav data-bento-lead aria-label={common.intro.nav} className="mt-8">
           <ul className="flex flex-wrap justify-center gap-2">
             {jumps.map((jump, position) => (
               <li key={jump.href}>

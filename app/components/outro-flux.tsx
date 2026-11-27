@@ -10,6 +10,7 @@ import { FLUX_BARS } from "@/app/components/flow-bento";
 import { PopText } from "@/app/components/services-story";
 import { bentoHeadingPop } from "@/app/lib/bento-motion";
 import { cn } from "@/lib/utils";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, DrawSVGPlugin, MotionPathPlugin);
 
@@ -51,36 +52,13 @@ const TV_COLORS = SETS.map((set) => set.color);
 
 type Commitment = { title: string; body: string; founder?: boolean };
 
-const COMMITMENTS: Commitment[] = [
-  {
-    title: "Comunicare directă, termene asumate",
-    body: "Ai un singur om de legătură, care îți cunoaște afacerea, coordonează etapele și te ține la curent cu evoluția proiectului.",
-  },
-  {
-    title: "Cifre explicate clar",
-    body: "Primești un raport scurt și ușor de înțeles, la intervalele stabilite împreună. Vezi ce am făcut, ce rezultate urmărim și ce ajustăm mai departe.",
-  },
-  {
-    title: "Tu dai acordul final",
-    body: "Găsești scenariile, materialele grafice și videoclipurile într-un singur loc. Le verifici, discutăm ajustările și le publicăm după aprobarea ta.",
-  },
-  {
-    title: "Conturile rămân ale tale",
-    body: "Conturile sunt pe numele tău, iar noi lucrăm prin acces de partener. Păstrezi controlul și accesul inclusiv după încheierea colaborării.",
-  },
-  {
-    title: "Tedy, implicat personal",
-    body: "De la prima discuție la strategie și deciziile importante, Tedy este implicat direct în proiectul tău.",
-    founder: true,
-  },
-];
+/* The five commitments are in the dictionary (how.outro.commitments); the last one is the founder's. */
+const FOUNDER_INDEX = 4;
 
 /** Each card takes a TV's colour, in turn. */
 const accentOf = (index: number) => TV_COLORS[index % TV_COLORS.length];
 
-const HEADING_LEAD = "Garantăm".split(" ");
-const HEADING_FLUX = "un singur flux".split(" ");
-const HEADING_TAIL = "de lucru, indiferent de câte servicii ai nevoie.".split(" ");
+/* "Garantăm / un singur flux / de lucru, indiferent de câte servicii ai nevoie.": copy in how.outro.heading. */
 
 /* The TV row and its streams share one 300px drawing, so the units are pixels. */
 const ROW = 300;
@@ -194,6 +172,11 @@ function Burst({ color }: { color: string }) {
 /* --------------------------------------------------------------- section */
 
 export function OutroFlux() {
+  const t = useDict().how.outro;
+  const commitments: Commitment[] = t.commitments.map((item, index) => ({ ...item, founder: index === FOUNDER_INDEX }));
+  const headingLead = t.heading.lead.split(" ");
+  const headingFlux = t.heading.flux.split(" ");
+  const headingTail = t.heading.tail.split(" ");
   const root = useRef<HTMLElement>(null);
   const [live, setLive] = useState(false);
 
@@ -452,23 +435,23 @@ export function OutroFlux() {
       <div className="mx-auto w-full max-w-5xl">
         <header className="mx-auto max-w-3xl text-center">
           <p data-bento-lead className="type-index text-dim">
-            Pe ce te poți baza
+            {t.index}
           </p>
           <h2
             id="outro-title"
             data-bento-heading
             className="type-h2 mt-2 text-balance text-eggshell"
           >
-            {HEADING_LEAD.map((word, index) => (
+            {headingLead.map((word, index) => (
               <span key={`l-${index}`}>
                 <PopText text={word} />{" "}
               </span>
             ))}
             <span className="relative inline-block whitespace-nowrap">
-              {HEADING_FLUX.map((word, index) => (
+              {headingFlux.map((word, index) => (
                 <span key={`f-${index}`}>
                   <PopText text={word} />
-                  {index < HEADING_FLUX.length - 1 ? " " : null}
+                  {index < headingFlux.length - 1 ? " " : null}
                 </span>
               ))}
               <span data-bento-bars aria-hidden="true" className="absolute inset-x-0 -bottom-[0.12em] flex h-[0.11em] origin-left">
@@ -477,28 +460,27 @@ export function OutroFlux() {
                 ))}
               </span>
             </span>{" "}
-            {HEADING_TAIL.map((word, index) => (
+            {headingTail.map((word, index) => (
               <span key={`t-${index}`}>
                 <PopText text={word} />{" "}
               </span>
             ))}
           </h2>
           <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
-            De la site și conținut la reclame și automatizări, totul urmează același plan. Știi cu cine vorbești,
-            ce urmează și cum avansează proiectul.
+            {t.lead}
           </p>
         </header>
 
         {/* The three ways: the pillar sets, then their streams running into the serpent. */}
         <div className="mx-auto mt-6 w-[300px] md:mt-8" aria-hidden="true">
           <div className="grid grid-cols-3 gap-[10px]">
-            {SETS.map((set) => (
+            {SETS.map((set, index) => (
               <div key={set.name} data-o="set" className="flex flex-col items-center gap-1.5">
                 <div className="w-[86px]">
                   <CartoonTv color={set.color} />
                 </div>
                 <span className="font-mono text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: set.color }}>
-                  {set.name}
+                  {t.sets[index]}
                 </span>
               </div>
             ))}
@@ -522,7 +504,7 @@ export function OutroFlux() {
             <SerpentHead />
           </svg>
 
-          {COMMITMENTS.map((item, index) => {
+          {commitments.map((item, index) => {
             const accent = accentOf(index);
             return (
               <li
@@ -581,7 +563,7 @@ export function OutroFlux() {
                       ) : (
                         /* Strand colour: it names the cable, so the paint stays. */
                         <span data-o="line" className="type-index" style={{ color: accent }}>
-                          {String(index + 1).padStart(2, "0")} · {SETS[index % SETS.length].name.toUpperCase()}
+                          {String(index + 1).padStart(2, "0")} · {t.sets[index % SETS.length].toUpperCase()}
                         </span>
                       )}
                       <div className="min-w-0">
@@ -609,15 +591,15 @@ export function OutroFlux() {
           >
             <div className="grid size-16 place-items-center rounded-full border-[3px] border-[#15110d] bg-background">
               <span className="font-display text-sm leading-none font-bold text-eggshell">
-                1<span className="font-mono block text-[10px] tracking-[0.14em] uppercase">flux</span>
+                1<span className="font-mono block text-[10px] tracking-[0.14em] uppercase">{t.badge}</span>
               </span>
             </div>
           </div>
           <p data-o="payoff" className="type-hook mt-6 text-balance text-eggshell">
-            Trei direcții. Un singur flux.
+            {t.payoff}
           </p>
           <p data-o="payoff" className="type-note mt-3 max-w-md text-dim">
-            Strategie, tehnologie și design, lucrate împreună de la primul pas.
+            {t.note}
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useDict } from "@/app/i18n/locale-provider";
 
 /**
  * Cel-ink illustrations for the creative bento (app/components/creative-bento.tsx).
@@ -60,7 +61,7 @@ function PieEye({ x, y }: { x: number; y: number }) {
 /** On set: softbox, camera on a tripod and a slate, in front of a TV-bar backdrop. 9:16. */
 export function OnSetScene({ playing = false }: { playing?: boolean }) {
   return (
-    <svg viewBox="0 0 180 320" role="img" aria-label="Ilustrație: platou de filmare cu cameră, lumină și clachetă" className="size-full">
+    <svg viewBox="0 0 180 320" role="img" aria-label={useDict().services.creative.art.onSet} className="size-full">
       <rect width="180" height="320" fill="#1d1813" />
       {/* Backdrop: the six bars, dimmed like a studio paper roll. */}
       {["--flux-yellow", "--flux-cyan", "--flux-green", "--flux-magenta", "--flux-red", "--flux-violet"].map((color, index) => (
@@ -115,7 +116,7 @@ export function OnSetScene({ playing = false }: { playing?: boolean }) {
 /** People: a pie-eyed portrait against a yellow halo, with a flash now and then. */
 export function PortraitArt() {
   return (
-    <svg viewBox="0 0 160 200" role="img" aria-label="Ilustrație: portret într-o ședință foto" className="size-full">
+    <svg viewBox="0 0 160 200" role="img" aria-label={useDict().services.creative.art.portrait} className="size-full">
       <rect width="160" height="200" fill="var(--flux-magenta)" />
       <circle cx="80" cy="92" r="58" fill="var(--flux-yellow)" {...LINE} />
       <path d="M26 200 C28 160 52 140 80 140 C108 140 132 160 134 200Z" fill="var(--flux-cyan)" {...LINE} />
@@ -135,7 +136,7 @@ export function PortraitArt() {
 /** Products: a bottle on a plinth under a spot, with a twinkle. */
 export function ProductArt() {
   return (
-    <svg viewBox="0 0 160 200" role="img" aria-label="Ilustrație: fotografie de produs" className="size-full">
+    <svg viewBox="0 0 160 200" role="img" aria-label={useDict().services.creative.art.product} className="size-full">
       <rect width="160" height="200" fill="var(--flux-cyan)" />
       <path d="M80 0 L28 132 H132Z" fill={PAPER} opacity="0.22" />
       <rect y="150" width="160" height="50" fill={SHADE} />
@@ -155,7 +156,7 @@ export function ProductArt() {
 /** Brands: a pair of business cards with a mark. */
 export function BrandArt() {
   return (
-    <svg viewBox="0 0 160 200" role="img" aria-label="Ilustrație: materiale de brand" className="size-full">
+    <svg viewBox="0 0 160 200" role="img" aria-label={useDict().services.creative.art.brand} className="size-full">
       <rect width="160" height="200" fill="var(--flux-violet)" />
       <rect x="24" y="52" width="104" height="64" rx="7" fill="var(--flux-yellow)" {...LINE} transform="rotate(-9 76 84)" />
       <g transform="rotate(6 86 120)">
@@ -178,7 +179,7 @@ export function LandscapeScene({ slice = false }: { slice?: boolean }) {
       viewBox="0 0 320 180"
       preserveAspectRatio={slice ? "xMidYMid slice" : "xMidYMid meet"}
       role="img"
-      aria-label="Ilustrație: cadru cu apus peste dealuri"
+      aria-label={useDict().services.creative.art.landscape}
       className="size-full"
     >
       <rect width="320" height="180" fill="var(--flux-violet)" />

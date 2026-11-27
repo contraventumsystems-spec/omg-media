@@ -1,6 +1,7 @@
 import { ServicesStory } from "@/app/components/services-story";
 import { StreamsBeat } from "@/app/components/streams-beat";
 import { WorkBeat } from "@/app/components/work-beat";
+import { getCopy } from "@/app/i18n/dictionary";
 
 /**
  * Beat 2, three streams. The track is 100svh of stage plus 180svh of scroll,
@@ -19,7 +20,9 @@ import { WorkBeat } from "@/app/components/work-beat";
  * the services continue that line (see services-story.tsx).
  * Reduced motion gets a plain solid section.
  */
-export function Services() {
+export async function Services() {
+  const { dict } = await getCopy();
+  const t = dict.home.streams;
   return (
     <section id="servicii" className="relative">
       <div
@@ -40,14 +43,13 @@ export function Services() {
             className="relative mx-auto w-full max-w-6xl px-5 pt-28 md:px-10 md:pt-24 motion-reduce:pt-20 md:motion-reduce:pt-28"
           >
             <h2 className="max-w-xl font-display text-4xl leading-[0.95] tracking-[-0.03em] text-eggshell md:text-6xl">
-              Trei direcții, un singur flux.
+              {t.heading}
             </h2>
             <p
               data-stream-lead
               className="mt-4 max-w-md text-base leading-relaxed text-platinum md:mt-5 md:max-w-xl md:text-lg"
             >
-              Strategie, design și tehnologie se lucrează de obicei separat. La
-              noi pornesc din același audit și ajung la aceeași cerere.
+              {t.lead}
             </p>
           </div>
         </div>
@@ -63,7 +65,9 @@ export function Services() {
  * The camera pushes into the centre screen while the section rises and sticks.
  * The channel carousel is not mounted. Reduced motion gets a plain solid section.
  */
-export function Work() {
+export async function Work() {
+  const { dict } = await getCopy();
+  const t = dict.home.work;
   return (
     <section id="lucrari" className="relative scroll-mt-0">
       <div
@@ -73,10 +77,10 @@ export function Work() {
       >
         <WorkBeat>
           <h2 className="max-w-xl font-display text-4xl leading-[0.95] tracking-[-0.03em] text-eggshell md:text-6xl">
-            Semnal clar, imagine întreagă.
+            {t.heading}
           </h2>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-platinum md:mt-5 md:text-lg">
-            Trei ecrane, o singură imagine: strategia, pagina și materialele.
+            {t.lead}
           </p>
         </WorkBeat>
       </div>

@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ChevronUp, X } from "lucide-react";
 import { heroServicesSeam, holdChannelCut } from "@/app/components/channel-change";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -23,12 +24,12 @@ type Menu = "closed" | "choices" | "sections";
 /** A jump target: `pin` stages land at their top, the rest under the header. */
 export type HelperSection = { id: string; label: string; pin: boolean };
 
-/** The homepage's sections. Each page passes its own. */
-const HOME_SECTIONS: HelperSection[] = [
-  { id: "pentru-cine", label: "Pentru cine lucrăm", pin: false },
-  { id: "ce-construim", label: "Ce construim", pin: true },
-  { id: "intrebari", label: "Întrebări", pin: false },
-];
+/** The homepage's sections; the labels come from the dictionary. Each page passes its own. */
+const HOME_SECTIONS = [
+  { id: "pentru-cine", pin: false },
+  { id: "ce-construim", pin: true },
+  { id: "intrebari", pin: false },
+] as const;
 
 /**
  * Scroll position at progress `p`, with the empty hero/services stretch
@@ -77,7 +78,9 @@ export function seamOnPath(from: number, to: number): Seam | null {
  * appears once the reader scrolls back up after the first 6%. The arrow opens
  * a two-step menu: the top of the hero, or one of three sections.
  */
-export function ScrollHelper({ sections = HOME_SECTIONS }: { sections?: HelperSection[] }) {
+export function ScrollHelper({ sections: given }: { sections?: HelperSection[] }) {
+  const t = useDict().common.helper;
+  const sections = given ?? HOME_SECTIONS.map((section, index) => ({ ...section, label: t.home[index] }));
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -328,7 +331,7 @@ export function ScrollHelper({ sections = HOME_SECTIONS }: { sections?: HelperSe
           aria-expanded={open}
           aria-controls={menuId}
           aria-haspopup="menu"
-          aria-label={open ? "Închide navigarea" : "Deschide navigarea: sus sau către o secțiune"}
+          aria-label={open ? t.close : t.open}
           onClick={() => {
             if (open) closeMenu();
             else {
@@ -350,19 +353,19 @@ export function ScrollHelper({ sections = HOME_SECTIONS }: { sections?: HelperSe
             key={menu}
             id={menuId}
             role="menu"
-            aria-label={menu === "choices" ? "Navigare rapidă" : "Alege o secțiune"}
+            aria-label={menu === "choices" ? t.quick : t.pick}
             className="helper-pop absolute bottom-full left-1/2 mb-3 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-popover/95 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
           >
             {menu === "choices" ? (
               <>
                 <Choice index="01" onSelect={() => choose("hero", true)}>
-                  Derulează sus
+                  {t.top}
                 </Choice>
                 <Choice index="02" onSelect={() => {
                   menuRef.current = "sections";
                   setMenu("sections");
                 }}>
-                  Derulează la o secțiune
+                  {t.toSection}
                 </Choice>
               </>
             ) : (

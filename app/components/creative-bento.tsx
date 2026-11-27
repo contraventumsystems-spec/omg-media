@@ -26,6 +26,8 @@ import { bentoEntrance, bentoHeadingPop } from "@/app/lib/bento-motion";
 import { Badge } from "@/components/ui/badge";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { fill } from "@/app/i18n/config";
+import { useDict } from "@/app/i18n/locale-provider";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -40,13 +42,13 @@ const PRESENTATION: { src?: string; poster?: string; captions?: string } = {};
 /** Window event that keeps one presentation playing at a time across the page. */
 const MEDIA_EVENT = "omg:media-play";
 
-const HEADING = "Conținut care îți pune brandul în lumină.";
-const PAYOFF_WORDS = 2;
+/* "Conținut care îți pune brandul în lumină.": copy in services.creative; the payoff gets the accent and the stroke. */
 
+/* Where each ratio is used is in the dictionary (services.creative.formats.uses), in this order. */
 const RATIOS = [
-  { id: "16:9", w: 16, h: 9, use: "YouTube, site" },
-  { id: "1:1", w: 1, h: 1, use: "Feed" },
-  { id: "9:16", w: 9, h: 16, use: "Reels, TikTok" },
+  { id: "16:9", w: 16, h: 9 },
+  { id: "1:1", w: 1, h: 1 },
+  { id: "9:16", w: 9, h: 16 },
 ] as const;
 
 const formatTime = (seconds: number) => {
@@ -62,6 +64,7 @@ const formatTime = (seconds: number) => {
  * scrolls out of view or when another presentation starts.
  */
 function VideoSlot() {
+  const t = useDict().services.creative.video;
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const id = useId();
@@ -141,7 +144,7 @@ function VideoSlot() {
           <ArtStage className="absolute inset-0">
             <OnSetScene playing={playing} />
             <span className="font-mono absolute top-3 left-3 rounded-full bg-background/75 px-2.5 py-1 text-[10px] tracking-[0.12em] text-eggshell uppercase">
-              Prezentare · 9:16
+              {t.badge} · 9:16
             </span>
           </ArtStage>
         )}
@@ -156,7 +159,7 @@ function VideoSlot() {
         <button
           type="button"
           onClick={toggle}
-          aria-label={playing ? "Pune pauză prezentării" : "Pornește prezentarea"}
+          aria-label={playing ? t.pauseBig : t.playBig}
           aria-pressed={playing}
           className={cn(
             "absolute inset-0 grid place-items-center motion-safe:transition-opacity motion-safe:duration-200",
@@ -173,7 +176,7 @@ function VideoSlot() {
           <button
             type="button"
             onClick={toggle}
-            aria-label={playing ? "Pauză" : "Redă"}
+            aria-label={playing ? t.pause : t.play}
             className="grid size-8 place-items-center rounded-full bg-eggshell/10 hover:bg-eggshell/20"
           >
             {playing ? <Pause className="size-4" fill="currentColor" /> : <Play className="size-4" fill="currentColor" />}
@@ -184,7 +187,7 @@ function VideoSlot() {
           {playing ? (
             <span className="font-mono flex items-center gap-1.5 text-[10px] tracking-[0.12em] uppercase">
               <span className="flux-blink size-1.5 rounded-full bg-flux-red" />
-              Rulează
+              {t.running}
             </span>
           ) : null}
           {live ? (
@@ -192,7 +195,7 @@ function VideoSlot() {
               <button
                 type="button"
                 onClick={() => setMuted((value) => !value)}
-                aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"}
+                aria-label={muted ? t.unmute : t.mute}
                 className="grid size-8 place-items-center rounded-full bg-eggshell/10 hover:bg-eggshell/20"
               >
                 {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
@@ -200,7 +203,7 @@ function VideoSlot() {
               <button
                 type="button"
                 onClick={() => void video.current?.requestFullscreen?.()}
-                aria-label="Ecran complet"
+                aria-label={t.fullscreen}
                 className="grid size-8 place-items-center rounded-full bg-eggshell/10 hover:bg-eggshell/20"
               >
                 <Maximize className="size-4" />
@@ -216,7 +219,7 @@ function VideoSlot() {
         className="inline-flex h-10 items-center gap-2 rounded-full bg-eggshell px-5 text-sm font-semibold text-background shadow-[4px_4px_0_var(--flux-cyan)] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 sm:hidden"
       >
         {playing ? <Pause className="size-4" fill="currentColor" /> : <Play className="size-4" fill="currentColor" />}
-        {playing ? "Pune pauză" : "Vezi prezentarea"}
+        {playing ? t.stop : t.watch}
       </button>
     </div>
   );
@@ -224,12 +227,8 @@ function VideoSlot() {
 
 /* ------------------------------------------------------------- B: photo stack */
 
-/** The three photographs, front first. Each one is a subject from the lead line. */
-const SHOTS = [
-  { label: "Oameni", Art: PortraitArt },
-  { label: "Produse", Art: ProductArt },
-  { label: "Branduri", Art: BrandArt },
-] as const;
+/** The three photographs, front first. Each one is a subject from the lead line; the names are in services.creative.photo.shots. */
+const SHOTS = [{ Art: PortraitArt }, { Art: ProductArt }, { Art: BrandArt }] as const;
 
 /** Deck slots: front, middle, back. */
 const SLOTS = [
@@ -252,6 +251,7 @@ const slotTransform = (slot: (typeof SLOTS)[number]) =>
  * click swaps instantly.
  */
 function PhotoStack() {
+  const photo = useDict().services.creative.photo;
   const root = useRef<HTMLButtonElement>(null);
   const order = useRef<number[]>([0, 1, 2]);
   const [front, setFront] = useState(0);
@@ -335,13 +335,13 @@ function PhotoStack() {
         ref={root}
         type="button"
         onClick={() => deal()}
-        aria-label={`Fotografia următoare. Acum: ${SHOTS[front].label}`}
+        aria-label={fill(photo.next, { label: photo.shots[front] })}
         className="relative grid h-48 w-full place-items-center sm:h-52"
       >
         <ArtStage className="absolute inset-0 grid place-items-center">
-          {SHOTS.map(({ label, Art }, index) => (
+          {SHOTS.map(({ Art }, index) => (
             <div
-              key={label}
+              key={photo.shots[index]}
               data-photo
               className="absolute aspect-[4/5] h-40 overflow-hidden rounded-xl border-2 border-[#15110d] shadow-[5px_5px_0_var(--flux-yellow)] sm:h-44"
               style={{ transform: slotTransform(SLOTS[index]), zIndex: SLOTS[index].zIndex }}
@@ -353,7 +353,7 @@ function PhotoStack() {
       </button>
       {/* Which subject is in front, in the words of the lead line. */}
       <p className="flex gap-1.5" aria-live="polite">
-        {SHOTS.map(({ label }, index) => (
+        {photo.shots.map((label, index) => (
           <span
             key={label}
             className={cn(
@@ -374,6 +374,7 @@ function PhotoStack() {
 /* --------------------------------------------------------- D: before / after */
 
 function EditingCompare() {
+  const editing = useDict().services.creative.editing;
   const root = useRef<HTMLDivElement>(null);
   const [split, setSplit] = useState(50);
 
@@ -425,15 +426,15 @@ function EditingCompare() {
           className="pointer-events-none absolute inset-y-0 w-0.5 bg-eggshell shadow-[0_0_0_1px_rgb(18_14_11/0.4)]"
           style={{ left: `${split}%` }}
         />
-        <span className="absolute top-3 left-3 rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-eggshell">Înainte</span>
-        <span className="absolute top-3 right-3 rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-eggshell">După</span>
+        <span className="absolute top-3 left-3 rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-eggshell">{editing.before}</span>
+        <span className="absolute top-3 right-3 rounded-full bg-background/70 px-2.5 py-1 text-[11px] text-eggshell">{editing.after}</span>
         <input
           type="range"
           min={0}
           max={100}
           value={split}
           onChange={(event) => setSplit(Number(event.target.value))}
-          aria-label="Compară cadrul înainte și după editare"
+          aria-label={editing.compare}
           className="absolute inset-0 size-full cursor-ew-resize opacity-0"
         />
       </div>
@@ -441,9 +442,9 @@ function EditingCompare() {
       {/* Illustration of an edit, not a working editor. */}
       <div aria-hidden="true" className="relative space-y-1.5 rounded-xl border border-eggshell/[0.06] bg-[#120e0b] p-3">
         {[
-          { label: "Imagine", color: "bg-flux-magenta", clips: [[0, 34], [36, 70], [72, 100]] },
-          { label: "Sunet", color: "bg-flux-green", clips: [[0, 58], [60, 100]] },
-          { label: "Titluri", color: "bg-flux-yellow", clips: [[8, 26], [64, 86]] },
+          { label: editing.tracks[0], color: "bg-flux-magenta", clips: [[0, 34], [36, 70], [72, 100]] },
+          { label: editing.tracks[1], color: "bg-flux-green", clips: [[0, 58], [60, 100]] },
+          { label: editing.tracks[2], color: "bg-flux-yellow", clips: [[8, 26], [64, 86]] },
         ].map((track) => (
           <div key={track.label} className="flex items-center gap-3">
             <span className="font-mono w-14 shrink-0 text-[10px] tracking-[0.08em] text-dim uppercase">{track.label}</span>
@@ -471,6 +472,7 @@ function EditingCompare() {
 /* ------------------------------------------------------------ E: formats */
 
 function FormatSwitch() {
+  const formats = useDict().services.creative.formats;
   const stage = useRef<HTMLDivElement>(null);
   const crop = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -547,7 +549,7 @@ function FormatSwitch() {
           </span>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2" role="group" aria-label="Formate de livrare">
+      <div className="grid grid-cols-3 gap-2" role="group" aria-label={formats.title.join(" ")}>
         {RATIOS.map((ratio, index) => (
           <button
             key={ratio.id}
@@ -565,7 +567,7 @@ function FormatSwitch() {
             )}
           >
             <span className="block font-display text-sm font-bold">{ratio.id}</span>
-            <span className="block text-[11px] text-dim">{ratio.use}</span>
+            <span className="block text-[11px] text-dim">{formats.uses[index]}</span>
           </button>
         ))}
       </div>
@@ -605,9 +607,9 @@ export function CreativeBento() {
     { scope: root },
   );
 
-  const words = HEADING.split(" ");
-  const lead = words.slice(0, -PAYOFF_WORDS);
-  const payoff = words.slice(-PAYOFF_WORDS);
+  const t = useDict().services.creative;
+  const lead = t.heading.lead.split(" ");
+  const payoff = t.heading.payoff.split(" ");
 
   /* overflow-hidden for the same reason as the flux bento: older Safari ignores `clip` and zooms out. */
   return (
@@ -618,7 +620,7 @@ export function CreativeBento() {
       <div ref={root} className="mx-auto w-full max-w-6xl">
         <header className="mx-auto max-w-5xl text-center">
           <p data-bento-lead className="type-index text-dim">
-            Producție de conținut
+            {t.index}
           </p>
           <h2
             data-bento-heading
@@ -649,9 +651,7 @@ export function CreativeBento() {
             </span>
           </h2>
           <p data-bento-lead className="type-lead mx-auto mt-4 text-platinum">
-            Filmări, ședințe foto, design grafic și editare video, de la idee la
-            materialele finale, ca brandul să arate la fel în reclamă, pe site
-            și pe telefon.
+            {t.lead}
           </p>
         </header>
 
@@ -661,18 +661,18 @@ export function CreativeBento() {
             <CardContent className="grid h-full items-start gap-6 sm:grid-cols-[auto_1fr] sm:gap-8">
               <VideoSlot />
               <div className="flex min-w-0 flex-col gap-4">
-                <Badge className="bg-flux-cyan font-bold text-background">Prezentare</Badge>
-                <Title strong="Filmare &" soft="producție video" />
-                <Lead>De la idee la cadre care spun povestea ta.</Lead>
+                <Badge className="bg-flux-cyan font-bold text-background">{t.video.badge}</Badge>
+                <Title strong={t.video.title[0]} soft={t.video.title[1]} />
+                <Lead>{t.video.lead}</Lead>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Concept & scenariu", "Filmare", "Lumini & sunet", "Regie"].map((item) => (
+                  {t.video.tags.map((item) => (
                     <Badge key={item} variant="outline" className="border-eggshell/15 text-platinum">
                       {item}
                     </Badge>
                   ))}
                 </div>
                 <p className="type-note text-dim">
-                  Apasă pe play ca să pornești prezentarea. Nu rulează singură.
+                  {t.video.note}
                 </p>
               </div>
             </CardContent>
@@ -681,8 +681,8 @@ export function CreativeBento() {
           {/* B: photo shoots. */}
           <BentoCard accent="var(--flux-yellow)" className="lg:col-span-4">
             <CardHeader className="gap-y-3">
-              <Title strong="Ședințe" soft="foto" />
-              <Lead>Oameni. Produse. Branduri.</Lead>
+              <Title strong={t.photo.title[0]} soft={t.photo.title[1]} />
+              <Lead>{t.photo.lead}</Lead>
             </CardHeader>
             <CardContent className="mt-auto">
               <PhotoStack />
@@ -692,8 +692,8 @@ export function CreativeBento() {
           {/* C: graphic design, an artboard at work. */}
           <BentoCard accent="var(--flux-violet)" className="lg:col-span-4">
             <CardHeader className="gap-y-3">
-              <Title strong="Design" soft="grafic" />
-              <Lead>Afișe, postări și bannere, construite pe identitatea ta.</Lead>
+              <Title strong={t.graphic.title[0]} soft={t.graphic.title[1]} />
+              <Lead>{t.graphic.lead}</Lead>
             </CardHeader>
             <CardContent className="mt-auto">
               <GraphicDesignBoard />
@@ -703,8 +703,8 @@ export function CreativeBento() {
           {/* C2: logo design, from construction grid to the logo in use. */}
           <BentoCard accent="var(--flux-yellow)" className="sm:col-span-2 lg:col-span-4">
             <CardHeader className="gap-y-3">
-              <Title strong="Logo" soft="design" />
-              <Lead>De la schiță la simbolul care te reprezintă, cu toate variantele lui.</Lead>
+              <Title strong={t.logo.title[0]} soft={t.logo.title[1]} />
+              <Lead>{t.logo.lead}</Lead>
             </CardHeader>
             <CardContent className="mt-auto">
               <LogoBuilder />
@@ -714,8 +714,8 @@ export function CreativeBento() {
           {/* D: editing. */}
           <BentoCard accent="var(--flux-magenta)" className="sm:col-span-2 lg:col-span-8">
             <CardHeader className="gap-y-3">
-              <Title strong="Editare" soft="video" />
-              <Lead>Ritm, culoare și sunet. Fiecare cadru contează.</Lead>
+              <Title strong={t.editing.title[0]} soft={t.editing.title[1]} />
+              <Lead>{t.editing.lead}</Lead>
             </CardHeader>
             <CardContent>
               <EditingCompare />
@@ -725,8 +725,8 @@ export function CreativeBento() {
           {/* E: delivery formats. */}
           <BentoCard accent="var(--flux-green)" className="sm:col-span-2 lg:col-span-4">
             <CardHeader className="gap-y-3">
-              <Title strong="Formate" soft="de livrare" />
-              <Lead>Același mesaj. Fiecare format.</Lead>
+              <Title strong={t.formats.title[0]} soft={t.formats.title[1]} />
+              <Lead>{t.formats.lead}</Lead>
             </CardHeader>
             <CardContent className="flex-1">
               <FormatSwitch />
